@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Tinner",
+    "slug": "tinner-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": ["expo-secure-store", "expo-location"],
+    "extra": {
+      "apiBaseUrl": "use EXPO_PUBLIC_API_BASE_URL from .env"
+    }
+  }
+}

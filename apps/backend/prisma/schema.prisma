@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DishType {
+  bun_bo     @map("bun bo")
+  bun_dau    @map("bun dau")
+  com_ga     @map("com ga")
+  com_tam    @map("com tam")
+  pho
+  banh_mi    @map("banh mi")
+  bun_cha    @map("bun cha")
+  hu_tieu    @map("hu tieu")
+  banh_xeo   @map("banh xeo")
+  goi_cuon   @map("goi cuon")
+  mi_quang   @map("mi quang")
+  bun_rieu   @map("bun rieu")
+  bun_bo_hue @map("bun bo hue")
+  banh_cuon  @map("banh cuon")
+  banh_canh  @map("banh canh")
+  banh_beo   @map("banh beo")
+
+  @@map("dish_type")
+}
+
+model User {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username      String            @unique @db.VarChar(50)
+  email         String            @unique @db.VarChar(255)
+  password      String            @db.VarChar(255)
+  fullName      String?           @map("full_name") @db.VarChar(255)
+  phone         String?           @db.VarChar(30)
+  role          String            @default("user") @db.VarChar(50)
+  isActive      Boolean           @default(true) @map("is_active")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  filters       UserFilter?
+  interactions  UserInteraction[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model Dish {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        DishType @unique
+  imageUrl    String   @map("image_url")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("dishes")
+}
+
+model Restaurant {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String            @db.VarChar(255)
+  address          String?
+  city             String?           @db.VarChar(100)
+  latitude         Float
+  longitude        Float
+  foursquareId     String            @unique @map("foursquare_id") @db.VarChar(255)
+  foursquareUrl    String?           @map("foursquare_url") @db.VarChar(500)
+  hours            String?           @db.VarChar(255)
+  dishTypes        DishType[]        @default([]) @map("dish_types")
+  phone            String?           @db.VarChar(50)
+  rating           Float?
+  userRatingsTotal Int               @default(0) @map("user_ratings_total")
+  priceLevel       Int?              @map("price_level")
+  lastSyncedAt     DateTime          @default(now()) @map("last_synced_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  interactions     UserInteraction[]
+
+  @@index([dishTypes], map: "idx_restaurants_dish_types", type: Gin)
+  @@map("restaurants")
+}
+
+model UserInteraction {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String      @map("user_id") @db.Uuid
+  dishType        DishType    @map("dish_type")
+  restaurantId    String?     @map("restaurant_id") @db.Uuid
+  interactionType String      @map("interaction_type") @db.VarChar(20)
+  createdAt       DateTime    @default(now()) @map("created_at")
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant      Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dishType, restaurantId, interactionType])
+  @@map("user_interactions")
+}
+
+model UserFilter {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId        String   @unique @map("user_id") @db.Uuid
+  cuisines      String[] @default([])
+  dietary       String[] @default([])
+  priceRanges   String[] @default([]) @map("price_ranges")
+  maxDistanceKm Float    @default(5.0) @map("max_distance_km")
+  minRating     Float    @default(3.0) @map("min_rating")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_filters")
+}
+
+model RefreshToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @map("token_hash")
+  deviceId   String?   @map("device_id")
+  deviceName String?   @map("device_name") @db.VarChar(255)
+  ip         String?   @db.Inet
+  userAgent  String?   @map("user_agent")
+  expiresAt  DateTime  @map("expires_at")
+  revoked    Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_refresh_tokens_user")
+  @@index([tokenHash], map: "idx_refresh_tokens_hash")
+  @@map("refresh_tokens")
+}

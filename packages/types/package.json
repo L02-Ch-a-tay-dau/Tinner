@@ -1,0 +1,19 @@
+{
+  "name": "@tinner/types",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo \"No lint configured for @tinner/types\"",
+    "test": "echo \"No tests configured for @tinner/types\""
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
