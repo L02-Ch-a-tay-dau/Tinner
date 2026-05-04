@@ -12,11 +12,20 @@
     "deploy:render:validate": "docker compose build backend",
     "deploy:apk": "pnpm --filter @tinner/mobile apk:build",
     "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "docs:build": "cd latex && pdflatex -interaction=nonstopmode main.tex"
   },
   "pnpm": {
     "overrides": {
       "vite": "6.3.5"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/engines",
+      "bcrypt",
+      "esbuild",
+      "prisma",
+      "unrs-resolver"
+    ]
   }
 }

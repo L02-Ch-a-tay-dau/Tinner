@@ -1,0 +1,226 @@
+\documentclass[12pt,a4paper]{report}
+
+% Encoding & language
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+% \usepackage{minted}
+\usepackage{listings}
+% Math
+\usepackage{amsmath,amsfonts,amssymb}
+
+% Layout
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\setlength{\emergencystretch}{3em} % FIX overfull boxes
+\usepackage{relsize}
+
+% Graphics
+\usepackage{graphicx}
+\usepackage{float}
+
+% Tables
+\usepackage{booktabs,array,multirow,longtable}
+
+% Colors & code
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{listingsutf8}
+
+% Links
+\usepackage{hyperref}
+
+% Header/footer
+\usepackage{fancyhdr}
+\setlength{\headheight}{45pt}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\fancyfoot[L]{\scriptsize Báo cáo BTL Phát triển ứng dụng trên thiết bị di động - CO3043}
+\fancyfoot[R]{\scriptsize Trang \thepage}
+
+% FIX header overflow (IMPORTANT)
+\fancyhead[L]{%
+  \begin{tabular}{rl}
+    \includegraphics[width=8mm]{images/LOGO_HCMUT.png} &
+    \parbox[b]{10cm}{ % ↓ reduced from 14cm → FIX
+      \textbf{\small TRƯỜNG ĐẠI HỌC BÁCH KHOA - ĐHQG-HCM}\\
+      \textbf{\small KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+    }
+  \end{tabular}
+}
+
+% Code style
+\lstdefinestyle{mystyle}{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left
+}
+
+% \setminted{
+% 	linenos=true,       % Đánh số dòng
+% 	breaklines=true,    % Tự động ngắt dòng nếu code dài
+% 	bgcolor=lightgray!10 % Thêm nền xám nhạt (cần gói xcolor)
+% }
+
+\usepackage{fancyhdr}
+%%%
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+\makeatletter
+\newcounter {subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection .\@alph\c@subsubsubsection}
+\newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+	{-3.25ex\@plus -1ex \@minus -.2ex}%
+	{1.5ex \@plus .2ex}%
+	{\normalfont\normalsize\bfseries}}
+\newcommand*\l@subsubsubsection{\@dottedtocline{3}{10.0em}{4.1em}}
+\newcommand*{\subsubsubsectionmark}[1]{}
+
+
+\makeatother
+
+
+
+\renewcommand{\headrulewidth}{0.3pt}
+ \renewcommand{\footrulewidth}{0.3pt}
+\fancyfoot{} % clear all footer fields
+\fancyfoot[L]{\scriptsize \ttfamily Báo cáo Bài tập lớn Phát triển ứng dụng trên thiết bị di động - CO3043 HK252 }
+\fancyfoot[R]{\scriptsize \ttfamily Trang \thepage / 75}
+
+
+
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+	language=Matlab,
+	aboveskip=3mm,
+	belowskip=3mm,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	numberstyle=\tiny\color{gray},
+	keywordstyle=\color{blue},
+	commentstyle=\color{dkgreen},
+	stringstyle=\color{mauve},
+	breaklines=true,
+	breakatwhitespace=true,
+	tabsize=3,
+	numbers=left,
+	stepnumber=1,
+	numbersep=1pt,    
+	firstnumber=1,
+	numberfirstline=true
+}
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage{listingsutf8}
+\usepackage{mdframed}
+%\usepackage{fancyhdr}
+\setlength{\headheight}{50pt}
+\lstset{style=mystyle}
+\usepackage{fancyhdr}
+%\usepackage{fancyhdr}
+
+\setlength{\headheight}{40pt}
+\pagestyle{fancy}
+\fancyhead{} % clear all header fields
+\fancyhead[L]{%
+  \begin{tabular}{rl}
+    \includegraphics[width=10mm]{images/LOGO_HCMUT.png} &
+    \parbox[b]{14cm}{% chiều rộng khối chữ, chỉnh theo ý
+      \textbf{\ttfamily TRƯỜNG ĐẠI HỌC BÁCH KHOA - ĐHQG-HCM}\\[1pt]
+      \textbf{\ttfamily KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
+    }
+  \end{tabular}%
+}
+\graphicspath{{images/}}
+
+% Định dạng khối chứa code cho phần 6 và 7
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstset{language=R, backgroundcolor=\color{backcolour}, basicstyle=\ttfamily\footnotesize, breaklines=true, frame=single}
+
+\begin{document}
+
+	\begin{titlepage}
+		\begin{center}
+			ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH \\
+			TRƯỜNG ĐẠI HỌC BÁCH KHOA \\
+			KHOA KHOA HỌC \& KỸ THUẬT MÁY TÍNH
+		\end{center}
+		
+		\vspace{1cm}
+		
+		\begin{figure}[h!]
+			\begin{center}
+				\includegraphics[width=4cm]{images/LOGO_HCMUT.png}
+			\end{center}
+		\end{figure}
+		
+		\vspace{1cm}
+		
+		
+		\begin{center}
+			\begin{tabular}{c}
+				\multicolumn{1}{l}{\textbf{{\hspace{10pt}\centering\Large BÁO CÁO BTL Phát triển ứng dụng trên thiết bị di động 
+                }}}\\
+                % \multicolumn{1}{l}{\textbf{{\centering\Large  }}}\\
+				~~\\
+				\hline
+				\\
+				\\
+				
+				\textbf{{\Large Tinner: Nền tảng di động tối ưu hóa}}\\
+				\textbf{{\Large quá trình đặt món và địa điểm}}\\
+				\\
+				\hline
+			\end{tabular}
+		\end{center}
+		
+		\vspace{2.76cm}
+		
+		\begin{table}[h]
+			\begin{tabular}{rrl}
+				\hspace{5 cm} & Giảng viên: & Ths. Hoàng Lê Hải Thanh \\
+				&Lớp:& L01  \\
+				&Khoa:& Khoa học và Kĩ thuật Máy tính \\
+			\end{tabular}
+		\end{table}
+		
+		\begin{center}
+            \vspace{50pt}
+			{\footnotesize TP. HỒ CHÍ MINH, THÁNG 05/2026}
+		\end{center}
+	\end{titlepage}
+	
+	
+	\thispagestyle{empty}
+	
+	\newpage
+	\tableofcontents
+	\clearpage
+
+\input{sections/1-Introduction.tex}
+\input{sections/2-ApproachAndMethodology.tex}
+\input{sections/3-ApplicationFeatures.tex}
+\input{sections/4-ImplementationDetails.tex}
+\input{sections/5-UserExperience.tex}
+\input{sections/6-SystemArchitecture.tex}
+\input{sections/7-WebServiceDesign.tex}
+\input{sections/8-DeploymentStrategy.tex}
+\input{sections/9-TestingCoverageReport.tex}
+\input{sections/10-UserSatisfactionAndAnalytics.tex}
+
+\input{sections/11-ProjectEvaluation.tex}
+
+\input{sections/12-RunnableProduct.tex}
+
+\input{sections/13-ProductDistributionAndSurvey.tex}
+
+\end{document}
+
