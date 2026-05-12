@@ -2,7 +2,70 @@
 \label{sec:user_experience}
 
 \subsection{Detailed User Flow}
-% Provide a detailed user flow for the MVP.
+The user flow for the Tinner Minimum Viable Product (MVP) is designed to be intuitive and engaging, focusing on two primary journeys: discovering dishes and managing saved choices.
 
-\subsection{Wireframes and Screenshots}
-% Include wireframes or screenshots to illustrate navigation and interactions.
+\subsubsection{Feature 1: Swipe to Discover and Save Dishes}
+This feature serves as the primary discovery mechanism, presenting users with nearby food options one at a time to reduce cognitive load. The flow is as follows:
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{images/Userflow_1.drawio.png}
+    \caption{Feature 1: Swipe to Discover and Save Dishes}
+    \label{fig:Userflow_1}
+    \hspace{0.02\textwidth}
+\end{figure}
+\begin{enumerate}
+    \item \textbf{Initialization:} The user opens the application. If it is their first session, the system requests location permissions to fetch nearby dining options.
+    \item \textbf{Discovery Screen:} The system displays a dish card featuring a high-quality image, dish name, price, rating, distance, and the restaurant's name.
+    \item \textbf{User Actions:} The user evaluates the dish and can perform one of three interactions:
+    \begin{itemize}
+        \item \textbf{Swipe Left:} Skip the dish.
+        \item \textbf{Swipe Right:} Save the dish to their personal ``Want to Try'' list.
+        \item \textbf{Tap Navigate:} View detailed restaurant information and open Google Maps for immediate directions.
+    \end{itemize}
+    \item \textbf{Continuity:} After an interaction, the system instantly presents the next available dish. If no more dishes match the current location or filters, an ``end of stack'' notification is displayed.
+\end{enumerate}
+
+\subsubsection{Feature 2: Manage ``Want to Try'' List}
+This feature transforms the initial discovery phase into an actionable decision-making process by allowing users to review their liked items.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=1\textwidth]{images/Userflow_2.drawio.png}
+    \caption{Feature 2: Manage ``Want to Try'' List}
+    \label{fig:Userflow_2}
+    \hspace{0.02\textwidth}
+\end{figure}
+\begin{enumerate}
+    \item \textbf{Accessing the List:} The user navigates to the ``Want to Try'' section from the main swipe interface.
+    \item \textbf{Reviewing Options:} The system presents a structured list of all previously saved dishes, enabling direct comparison.
+    \item \textbf{Decision Actions:} The user can manage their selections by:
+    \begin{itemize}
+        \item \textbf{Viewing Details:} Accessing the comprehensive dish and restaurant detail screen to get directions via mapping services.
+        \item \textbf{Removing Items:} Deleting a dish from the list if they lose interest. The system handles empty states gracefully if all items are removed.
+        \item \textbf{Returning:} Navigating back to the main swipe screen to continue discovering new food.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Screenshots}
+The following screenshots illustrate the core navigation and user interactions within the application, demonstrating the "Visual-First" philosophy and intuitive user interface.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/Login.jpg}
+    \hspace{0.02\textwidth}
+    \includegraphics[width=0.3\textwidth]{images/Swipe_1.jpg}
+    \hspace{0.02\textwidth}
+    \includegraphics[width=0.3\textwidth]{images/Swipe_2.jpg}
+    \caption{From left to right: Login Screen, Discovery (Swipe) Interface displaying dish information, and Swipe Interaction.}
+    \label{fig:screenshots_1}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.3\textwidth]{images/Map.jpg}
+    \hspace{0.02\textwidth}
+    \includegraphics[width=0.3\textwidth]{images/Saved.jpg}
+    \hspace{0.02\textwidth}
+    \includegraphics[width=0.3\textwidth]{images/Profile.jpg}
+    \caption{From left to right: Integrated Map \& Navigation, ``Want to Try'' (Saved) List, and User Profile.}
+    \label{fig:screenshots_2}
+\end{figure}

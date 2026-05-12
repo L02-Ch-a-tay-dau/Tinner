@@ -2,7 +2,19 @@
 \label{sec:application_features}
 
 \subsection{Core Features (MVP)}
-% Outline the core features of the Minimum Viable Product.
+The Minimum Viable Product focuses on delivering the essential user flow: discovering dishes, saving preferences, reviewing choices, and navigating to the destination.
+\begin{itemize}
+    \item \textbf{Swipe to Discover (Swipe-to-Match Logic):} This is the primary discovery mechanism. The system fetches nearby dishes based on the user's location and presents them in a Single-View Interface. Users swipe left to skip or swipe right to save the dish. This mechanism enforces fast, intuitive decision-making.
+    \item \textbf{Manage ``Want to Try'' List (Personal Collections):} A dedicated space where users can review and manage dishes they previously saved via swiping. It allows users to compare options, reconsider choices, and remove items, transforming the discovery phase into an actionable decision-making process.
+    \item \textbf{Restaurant Info Card:} Upon interacting with a dish, the app displays a comprehensive card featuring high-quality food images, menu summaries, opening hours, and highlighted reviews. This provides a quick overview without requiring multiple screen transitions.
+\end{itemize}
 
 \subsection{Advanced Functionalities}
-% Describe any advanced functionalities.
+To elevate the user experience beyond basic discovery, several advanced functionalities are integrated into the platform:
+\begin{itemize}
+    \item \textbf{Smart Filters:} Users can narrow down search results precisely based on real-time needs by filtering by radius (distance), price level, cuisine type, and ratings.
+    \item \textbf{Map \& Navigation Integration:} Users can view liked restaurants on a map or navigate directly to the location with one tap via Google Maps or Apple Maps integrations, optimizing travel routes.
+    \item \textbf{3rd-Party API Integration:} To increase data credibility and provide objective perspectives, the application integrates with external sources (e.g., Google Places, Yelp) to display verified scores and reviews.
+    \item \textbf{Group Match and Gamification:} Features like ``Group Match'' (where a match happens only when everyone in a group swipes right) and ``Lucky Spin'' are designed to resolve group dining conflicts and turn choosing a restaurant into a fun social game.
+    \item \textbf{Food Tours:} The application supports curated itineraries that turn a standard dinner into a micro-adventure, stimulating curiosity and increasing the time users spend engaged with the platform.
+\end{itemize}
