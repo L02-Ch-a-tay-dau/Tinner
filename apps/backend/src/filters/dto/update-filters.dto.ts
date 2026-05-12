@@ -38,7 +38,7 @@ export class UpdateFiltersDto {
   @IsOptional()
   @IsNumber({}, { message: "maxDistanceKm must be a number" })
   @Min(0.5, { message: "maxDistanceKm must be at least 0.5 km" })
-  @Max(50, { message: "maxDistanceKm must not exceed 50 km" })
+  @Max(7, { message: "maxDistanceKm must not exceed 7 km" })
   maxDistanceKm?: number;
 
   @IsOptional()

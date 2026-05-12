@@ -9,6 +9,6 @@ export class SuggestionsController {
 
   @Get()
   getSuggestions(@CurrentUser() user: { sub: string }, @Query() query: GetSuggestionsDto) {
-    return this.suggestionsService.getSuggestions(user.sub, query.dishType, query.lat, query.lng);
+    return this.suggestionsService.getSuggestions(user.sub, query.lat, query.lng, query.dishType);
   }
 }

@@ -1,4 +1,6 @@
-export type ScreenName = "login" | "swipe" | "map" | "collections" | "filters";
+export const GUEST_USER_EMAIL = "guest@tinner.app";
+
+export type ScreenName = "login" | "signup" | "swipe" | "map" | "collections" | "filters";
 
 export interface NativeRestaurant {
   id: string;
@@ -21,6 +23,8 @@ export interface NativeFood {
   description: string;
   image: string;
   calories: string;
+  /** When set (e.g. map/API cards), shown in the stats pill instead of calorie-style copy */
+  cardStats?: { emoji: string; text: string };
   tags: string[];
   dishType: string;
   restaurants: NativeRestaurant[];
@@ -32,6 +36,12 @@ export interface LikedFood {
   cuisine: string;
   likedAt: string;
   image: string;
+  description?: string;
+  tags?: string[];
+  dishType?: string;
+  calories?: string;
+  cardStats?: NativeFood["cardStats"];
+  restaurants?: NativeRestaurant[];
 }
 
 export interface UserPreferences {

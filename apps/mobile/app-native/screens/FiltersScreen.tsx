@@ -176,7 +176,7 @@ export function FiltersScreen({
             </View>
             <Pressable
               style={styles.stepperButton}
-              onPress={() => onChangePreferences({ ...preferences, maxDistance: Math.min(20, preferences.maxDistance + 1) })}
+              onPress={() => onChangePreferences({ ...preferences, maxDistance: Math.min(7, preferences.maxDistance + 1) })}
             >
               <Text style={styles.stepperText}>+</Text>
             </Pressable>

@@ -53,8 +53,8 @@ export interface RestaurantDto {
   city: string | null;
   latitude: number;
   longitude: number;
-  foursquareId: string;
-  foursquareUrl: string | null;
+  placeId: string;
+  placeUrl: string | null;
   phone: string | null;
   rating: number | null;
   userRatingsTotal: number;

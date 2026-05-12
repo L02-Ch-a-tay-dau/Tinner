@@ -67,8 +67,8 @@ model Restaurant {
   city             String?           @db.VarChar(100)
   latitude         Float
   longitude        Float
-  foursquareId     String            @unique @map("foursquare_id") @db.VarChar(255)
-  foursquareUrl    String?           @map("foursquare_url") @db.VarChar(500)
+  placeId          String            @unique @map("place_id") @db.VarChar(255)
+  placeUrl         String?           @map("place_url") @db.VarChar(500)
   hours            String?           @db.VarChar(255)
   dishTypes        DishType[]        @default([]) @map("dish_types")
   phone            String?           @db.VarChar(50)
