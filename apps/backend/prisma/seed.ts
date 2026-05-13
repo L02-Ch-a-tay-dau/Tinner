@@ -1,6 +1,12 @@
 import { PrismaClient, DishType } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import "dotenv/config";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const dishes: Array<{ name: DishType; description: string }> = [
   { name: "bun_bo", description: "Bun bo with rich beef broth and herbs." },
