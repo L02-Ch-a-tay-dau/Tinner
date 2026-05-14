@@ -1,11 +1,11 @@
 import { ArgumentsHost, HttpException, HttpStatus } from "@nestjs/common";
-import { HttpExceptionFilter } from "../filters/http-exception.filter";
+import { GlobalExceptionFilter } from "../filters/http-exception.filter";
 
-describe("HttpExceptionFilter", () => {
-  let filter: HttpExceptionFilter;
+describe("GlobalExceptionFilter", () => {
+  let filter: GlobalExceptionFilter;
 
   beforeEach(() => {
-    filter = new HttpExceptionFilter();
+    filter = new GlobalExceptionFilter();
   });
 
   const mockResponse = {

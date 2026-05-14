@@ -3,6 +3,7 @@ import { SuggestionsService } from "../suggestions.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { FiltersService } from "../../filters/filters.service";
 import { FoursquareService } from "../foursquare.service";
+import { OverpassService } from "../overpass.service";
 import { DishType } from "@prisma/client";
 
 describe("SuggestionsService", () => {
@@ -10,11 +11,14 @@ describe("SuggestionsService", () => {
   let prisma: PrismaService;
   let filtersService: FiltersService;
   let foursquareService: FoursquareService;
+  let overpassService: any;
 
   const mockPrismaService = {
     restaurant: {
       upsert: jest.fn(),
       findMany: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
+      createMany: jest.fn(),
     },
   };
 
@@ -26,6 +30,11 @@ describe("SuggestionsService", () => {
     searchByDishType: jest.fn(),
   };
 
+  const mockOverpassService = {
+    searchByDishType: jest.fn(),
+    fetchAround: jest.fn().mockResolvedValue([]),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +42,7 @@ describe("SuggestionsService", () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: FiltersService, useValue: mockFiltersService },
         { provide: FoursquareService, useValue: mockFoursquareService },
+        { provide: OverpassService, useValue: mockOverpassService },
       ],
     }).compile();
 
@@ -40,36 +50,39 @@ describe("SuggestionsService", () => {
     prisma = module.get<PrismaService>(PrismaService);
     filtersService = module.get<FiltersService>(FiltersService);
     foursquareService = module.get<FoursquareService>(FoursquareService);
+    overpassService = module.get<OverpassService>(OverpassService);
     jest.clearAllMocks();
   });
 
   describe("getSuggestions", () => {
-    it("should fetch from foursquare, sync to DB, and return suggestions", async () => {
-      const mockFilters = { maxDistanceKm: 5, minRating: 3, priceRanges: ["$", "$$"] };
+    it("should fetch from overpass, sync to DB, and return suggestions when not fresh", async () => {
+      const mockFilters = { maxDistanceKm: 5, minRating: 3 };
       mockFiltersService.getFilters.mockResolvedValue(mockFilters);
+      mockPrismaService.restaurant.count.mockResolvedValue(0); // Not fresh
 
-      const mockFsqResults = [
+      const mockOverpassResults = [
         {
-          fsq_place_id: "p1",
+          id: "p1",
           name: "Place 1",
-          location: { formatted_address: "Address 1" },
+          address: "Address 1",
           latitude: 10,
           longitude: 10,
-          rating: 8,
-          price: 2,
+          dishTypes: [DishType.pho],
         },
       ];
-      mockFoursquareService.searchByDishType.mockResolvedValue(mockFsqResults);
+      mockOverpassService.fetchAround.mockResolvedValue(mockOverpassResults);
+      mockPrismaService.restaurant.createMany = jest.fn().mockResolvedValue({ count: 1 });
 
       const mockSuggestions = [
-        { id: "p1", name: "Place 1", latitude: 10, longitude: 10, dishTypes: [DishType.pho] }
+        { id: "p1", name: "Place 1", latitude: 10, longitude: 10, dishTypes: [DishType.pho], distanceKm: 0 }
       ];
       mockPrismaService.restaurant.findMany.mockResolvedValue(mockSuggestions);
 
-      const result = await service.getSuggestions("u1", DishType.pho, 10, 10);
+      const result = await service.getSuggestions("u1", 10, 10, DishType.pho);
 
       expect(filtersService.getFilters).toHaveBeenCalledWith("u1");
-      expect(foursquareService.searchByDishType).toHaveBeenCalledWith(DishType.pho, 10, 10, 5000);
+      expect(overpassService.fetchAround).toHaveBeenCalledWith(10, 10);
+      expect(prisma.restaurant.createMany).toHaveBeenCalled();
       expect(result[0]).toMatchObject({
         id: "p1",
         name: "Place 1",
@@ -77,9 +90,10 @@ describe("SuggestionsService", () => {
       });
     });
 
-    it("should return local suggestions directly if enough are found (early exit)", async () => {
+    it("should return local suggestions directly if area is fresh (early exit)", async () => {
       mockFiltersService.getFilters.mockResolvedValue({ maxDistanceKm: 5, minRating: 3 });
-      
+      mockPrismaService.restaurant.count.mockResolvedValue(20); // Fresh
+
       const manySuggestions = Array(10).fill(null).map((_, i) => ({
         id: `p${i}`,
         name: `Place ${i}`,
@@ -89,26 +103,10 @@ describe("SuggestionsService", () => {
       }));
       mockPrismaService.restaurant.findMany.mockResolvedValue(manySuggestions);
 
-      const result = await service.getSuggestions("u1", DishType.pho, 10, 10);
+      const result = await service.getSuggestions("u1", 10, 10, DishType.pho);
 
-      expect(foursquareService.searchByDishType).not.toHaveBeenCalled();
+      expect(overpassService.fetchAround).not.toHaveBeenCalled();
       expect(result).toHaveLength(10);
-    });
-
-    it("should skip Foursquare results with missing critical fields", async () => {
-      mockFiltersService.getFilters.mockResolvedValue({ maxDistanceKm: 5, minRating: 3 });
-      mockPrismaService.restaurant.findMany.mockResolvedValue([]); // No local results
-      
-      const invalidResults = [
-        { name: "Missing ID" }, // No fsq_place_id
-        { fsq_place_id: "p1", name: "Missing Lat", longitude: 10 }, // No latitude
-      ];
-      mockFoursquareService.searchByDishType.mockResolvedValue(invalidResults);
-
-      const result = await service.getSuggestions("u1", DishType.pho, 10, 10);
-      
-      expect(prisma.restaurant.upsert).not.toHaveBeenCalled();
-      expect(result).toHaveLength(0);
     });
   });
 });

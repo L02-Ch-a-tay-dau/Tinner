@@ -4,6 +4,12 @@ import request from "supertest";
 import { App } from "supertest/types";
 import { AppModule } from "../src/app.module";
 import { PrismaService } from "../src/prisma/prisma.service";
+import * as bcrypt from "bcrypt";
+
+jest.mock("bcrypt", () => ({
+  hash: jest.fn().mockResolvedValue("hashed-password"),
+  compare: jest.fn(),
+}));
 
 describe("AuthController (e2e)", () => {
   let app: INestApplication<App>;
@@ -39,16 +45,16 @@ describe("AuthController (e2e)", () => {
   });
 
   describe("/api/v1/auth/register (POST)", () => {
-    it("should register a new user", () => {
-      const registerDto = {
-        email: "e2e@example.com",
-        username: "e2euser",
-        password: "Password123",
-        confirmPassword: "Password123",
-        fullName: "E2E User",
-        phone: "+84123456789",
-      };
+    const registerDto = {
+      email: "e2e@example.com",
+      username: "e2euser",
+      password: "Password123",
+      confirmPassword: "Password123",
+      fullName: "E2E User",
+      phone: "+84123456789",
+    };
 
+    it("should register a new user", () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       mockPrismaService.user.create.mockResolvedValue({
         id: "e2e-user-id",
@@ -65,29 +71,61 @@ describe("AuthController (e2e)", () => {
           expect(res.body.tokens).toBeDefined();
         });
     });
+
+    it("should return 409 if email is already taken", () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: "existing" });
+
+      return request(app.getHttpServer())
+        .post("/api/v1/auth/register")
+        .send(registerDto)
+        .expect(409);
+    });
   });
 
   describe("/api/v1/auth/login (POST)", () => {
-    it("should login an existing user", () => {
-      const loginDto = {
-        email: "e2e@example.com",
-        password: "password123",
-      };
+    const loginDto = {
+      email: "e2e@example.com",
+      password: "password123",
+    };
 
-      // Note: In real E2E we'd need to handle bcrypt, but since we mock service logic 
-      // is already tested in unit tests, here we just check if the endpoint responds.
-      // However, since we're using the real AuthService (not mocked), we need to 
-      // mock the Prisma return to satisfy the real AuthService logic.
-      
+    it("should login an existing user", () => {
       mockPrismaService.user.findUnique.mockResolvedValue({
         id: "e2e-user-id",
         email: loginDto.email,
-        password: "hashed-password", // Real AuthService will try to bcrypt.compare this
+        password: "hashed-password",
       });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      // This might fail if bcrypt.compare fails with "hashed-password".
-      // For a true E2E test, we'd either use a real test DB or mock the service.
-      // But let's try to see if it works or if we need to mock bcrypt.
+      return request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send(loginDto)
+        .expect(201)
+        .expect((res) => {
+          expect(res.body.tokens).toBeDefined();
+        });
+    });
+
+    it("should return 401 for invalid credentials (wrong password)", () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: "e2e-user-id",
+        email: loginDto.email,
+        password: "hashed-password",
+      });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      return request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send(loginDto)
+        .expect(401);
+    });
+
+    it("should return 401 for non-existent user", () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      return request(app.getHttpServer())
+        .post("/api/v1/auth/login")
+        .send(loginDto)
+        .expect(401);
     });
   });
 });

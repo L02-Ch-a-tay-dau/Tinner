@@ -27,7 +27,7 @@ describe("SuggestionsController", () => {
     it("should call service.getSuggestions", async () => {
       const dto = { dishType: DishType.pho, lat: 10, lng: 10 };
       await controller.getSuggestions({ sub: "u1" }, dto);
-      expect(service.getSuggestions).toHaveBeenCalledWith("u1", dto.dishType, dto.lat, dto.lng);
+      expect(service.getSuggestions).toHaveBeenCalledWith("u1", dto.lat, dto.lng, dto.dishType);
     });
   });
 });
