@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FoodSwipeCard } from "../components/FoodSwipeCard";
 import { RestaurantPanel } from "../components/RestaurantPanel";
 import { colors, sharedStyles, shadow, spacing } from "../theme";
-import type { NativeFood, UserProfile } from "../types";
+import { GUEST_USER_EMAIL, type NativeFood, type UserProfile } from "../types";
 
 interface SwipeScreenProps {
   deck: NativeFood[];
@@ -40,6 +40,7 @@ export function SwipeScreen({
   const secondFood = deck.at(-2);
   const thirdFood = deck.at(-3);
   const swipeEnabled = !selectedFood;
+  const isGuest = user?.email === GUEST_USER_EMAIL;
   const cardHeight = Math.min(520, Math.max(340, Math.round(windowHeight * 0.54)));
   const screenWithNavStyle = {
     paddingBottom: spacing.navHeight + Math.max(12, insets.bottom + 8),
@@ -85,14 +86,42 @@ export function SwipeScreen({
             </View>
           ) : deck.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyEmoji}>🍽️</Text>
-              <Text style={styles.emptyTitle}>You've seen it all!</Text>
-              <Text style={styles.emptyText}>
-                You liked {likedCount} place{likedCount !== 1 ? "s" : ""}. Ready for another round?
-              </Text>
-              <Pressable style={styles.startOverButton} onPress={onReset}>
-                <Text style={styles.startOverText}>↻ Start Over</Text>
-              </Pressable>
+              {isGuest ? (
+                <>
+                  <Text style={styles.emptyEmoji}>🗺️</Text>
+                  <Text style={styles.emptyTitle}>Map suggestions</Text>
+                  <Text style={styles.emptyText}>
+                    Sign in to load nearby restaurants from your location (backend map / places data). Guest mode
+                    does not call the suggestions API.
+                  </Text>
+                  <Pressable style={styles.startOverButton} onPress={onLogout}>
+                    <Text style={styles.startOverText}>Sign in</Text>
+                  </Pressable>
+                </>
+              ) : likedCount === 0 && skippedCount === 0 ? (
+                <>
+                  <Text style={styles.emptyEmoji}>📍</Text>
+                  <Text style={styles.emptyTitle}>No nearby places</Text>
+                  <Text style={styles.emptyText}>
+                    The suggestions API returned no restaurants in range. Try again or open Filters to relax distance
+                    or rating.
+                  </Text>
+                  <Pressable style={styles.startOverButton} onPress={onReset}>
+                    <Text style={styles.startOverText}>↻ Retry</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.emptyEmoji}>🍽️</Text>
+                  <Text style={styles.emptyTitle}>You've seen it all!</Text>
+                  <Text style={styles.emptyText}>
+                    You liked {likedCount} place{likedCount !== 1 ? "s" : ""}. Ready for another round?
+                  </Text>
+                  <Pressable style={styles.startOverButton} onPress={onReset}>
+                    <Text style={styles.startOverText}>↻ Start Over</Text>
+                  </Pressable>
+                </>
+              )}
             </View>
           ) : (
             <>
@@ -137,7 +166,7 @@ export function SwipeScreen({
           <>
             <View style={styles.remainingRow}>
               <Text style={styles.remainingText}>
-                ✨ {deck.length} dish{deck.length !== 1 ? "es" : ""} remaining
+                ✨ {deck.length} place{deck.length !== 1 ? "s" : ""} remaining
               </Text>
             </View>
             <View style={styles.actions}>

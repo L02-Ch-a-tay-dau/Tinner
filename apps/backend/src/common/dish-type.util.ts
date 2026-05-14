@@ -47,3 +47,35 @@ export const dishTypeFromApiValue = (value: string): DishType | string => {
   const normalized = normalizeDishInput(value);
   return aliasToDishType[normalized] ?? value.replaceAll(" ", "_");
 };
+
+const matcherList: Array<{ aliasNormalized: string; dishType: DishType }> = (() => {
+  const items: Array<{ aliasNormalized: string; dishType: DishType }> = [];
+  for (const [dishType, aliases] of Object.entries(dishAliases) as [DishType, string[]][]) {
+    for (const alias of [...aliases, dishType]) {
+      const normalized = normalizeDishInput(alias);
+      if (normalized) {
+        items.push({ aliasNormalized: normalized, dishType });
+      }
+    }
+  }
+  return items.sort((a, b) => b.aliasNormalized.length - a.aliasNormalized.length);
+})();
+
+export function detectDishTypesInText(...inputs: Array<string | null | undefined>): DishType[] {
+  const combined = inputs
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .map((value) => normalizeDishInput(value))
+    .join(" ");
+
+  if (!combined) {
+    return [];
+  }
+  const haystack = ` ${combined} `;
+  const found = new Set<DishType>();
+  for (const { aliasNormalized, dishType } of matcherList) {
+    if (haystack.includes(` ${aliasNormalized} `)) {
+      found.add(dishType);
+    }
+  }
+  return Array.from(found);
+}

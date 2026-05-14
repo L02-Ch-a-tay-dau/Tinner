@@ -1,12 +1,13 @@
 import { DishType } from "@prisma/client";
 import { Transform, Type } from "class-transformer";
-import { IsEnum, IsNumber, Max, Min } from "class-validator";
+import { IsEnum, IsNumber, IsOptional, Max, Min } from "class-validator";
 import { dishTypeFromApiValue } from "../../common/dish-type.util";
 
 export class GetSuggestionsDto {
+  @IsOptional()
   @Transform(({ value }) => (typeof value === "string" ? dishTypeFromApiValue(value) : value))
   @IsEnum(DishType, { message: "dishType must be a valid dish type" })
-  dishType!: DishType;
+  dishType?: DishType;
 
   @Type(() => Number)
   @IsNumber({}, { message: "lat must be a number" })

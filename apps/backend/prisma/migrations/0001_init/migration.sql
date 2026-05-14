@@ -42,8 +42,9 @@ CREATE TABLE "restaurants" (
     "city" VARCHAR(100),
     "latitude" DOUBLE PRECISION NOT NULL,
     "longitude" DOUBLE PRECISION NOT NULL,
-    "google_place_id" VARCHAR(255) NOT NULL,
-    "google_url" VARCHAR(500),
+    "place_id" VARCHAR(255) NOT NULL,
+    "place_url" VARCHAR(500),
+    "hours" VARCHAR(255),
     "dish_types" "dish_type"[] DEFAULT ARRAY[]::"dish_type"[],
     "phone" VARCHAR(50),
     "rating" DOUBLE PRECISION,
@@ -108,7 +109,7 @@ CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 CREATE UNIQUE INDEX "dishes_name_key" ON "dishes"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "restaurants_google_place_id_key" ON "restaurants"("google_place_id");
+CREATE UNIQUE INDEX "restaurants_place_id_key" ON "restaurants"("place_id");
 
 -- CreateIndex
 CREATE INDEX "idx_restaurants_dish_types" ON "restaurants" USING GIN ("dish_types");

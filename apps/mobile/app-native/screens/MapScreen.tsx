@@ -10,6 +10,8 @@ interface MapScreenProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onOpenFilters: () => void;
+  /** Shown when there are zero places (e.g. guest / before swipe deck loads) */
+  emptyHint?: string;
 }
 
 function collectRestaurants(foods: NativeFood[]) {
@@ -66,7 +68,13 @@ function RestaurantRow({ restaurant }: { restaurant: MapRestaurant }) {
   );
 }
 
-export function MapScreen({ foods, searchQuery, onSearchChange, onOpenFilters }: MapScreenProps) {
+export function MapScreen({
+  foods,
+  searchQuery,
+  onSearchChange,
+  onOpenFilters,
+  emptyHint,
+}: MapScreenProps) {
   const insets = useSafeAreaInsets();
   const allRestaurants = collectRestaurants(foods);
   const query = searchQuery.trim().toLowerCase();
@@ -115,7 +123,9 @@ export function MapScreen({ foods, searchQuery, onSearchChange, onOpenFilters }:
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>⌕</Text>
             <Text style={styles.emptyTitle}>No restaurants found</Text>
-            <Text style={styles.emptyText}>Try adjusting your filters</Text>
+            <Text style={styles.emptyText}>
+              {foods.length === 0 && emptyHint ? emptyHint : "Try adjusting your filters"}
+            </Text>
           </View>
         ) : (
           filtered.map((restaurant) => (
