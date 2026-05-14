@@ -116,9 +116,7 @@
 	firstnumber=1,
 	numberfirstline=true
 }
-\usepackage[T5]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage[vietnamese]{babel}
+
 \usepackage{listingsutf8}
 \usepackage{mdframed}
 %\usepackage{fancyhdr}
@@ -368,7 +366,7 @@ Luồng \texttt{GET /api/v1/suggestions} minh hoạ cách backend kết hợp DB
   \item Suggestions service kiểm tra số nhà hàng đã sync trong bbox quanh user. Đủ ngưỡng → bỏ qua Overpass.
   \item Nếu thiếu, gọi Overpass một lần (bán kính 7 km, filter amenity), parse cuisine/name để gán \texttt{dishTypes}, bulk insert qua \texttt{createMany skipDuplicates}.
   \item Đọc DB cuối cùng: filter bbox + Haversine, sort theo distance, slice top N, shuffle nếu là chế độ mixed.
-\end{enumerate>
+\end{enumerate}
 
 \section{7. Thiết kế dịch vụ web (Web Service Design)}
 
@@ -435,7 +433,7 @@ Backend tích hợp Swagger/OpenAPI qua \texttt{@nestjs/swagger} và \texttt{swa
 Nhờ Swagger, nhóm có thể:
 \begin{itemize}
   \item Kiểm thử nhanh endpoint trong browser (paste access token vào ô Authorize).
-  \item Đồng bộ contract giữa backend ↔ mobile mà không cần Postman riêng.
+  \item Đồng bộ contract giữa backend $\leftrightarrow$ mobile mà không cần Postman riêng.
   \item Trong tương lai có thể export OpenAPI spec cho mock server hoặc generate typed client tự động.
 \end{itemize}
 
