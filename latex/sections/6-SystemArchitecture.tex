@@ -1,5 +1,61 @@
-\section{System Architecture}
-\label{sec:system_architecture}
+\section{Sơ đồ kiến trúc hệ thống}
 
-\subsection{Architecture Overview}
-% Diagram and explain the overall architecture, including frontend, backend, database, and integrations.
+\subsection{Mô tả kiến trúc tổng quan}
+
+Kiến trúc hệ thống theo mô hình client -- server, gồm 4 tầng và một tích hợp third-party duy nhất:
+
+\begin{itemize}
+  \item \textbf{Client layer}: Ứng dụng di động Expo/React Native là client chính. Web frontend (Vite + React) đóng vai trò tham chiếu/landing tuỳ chọn.
+  \item \textbf{API layer}: Backend NestJS expose REST API tại prefix \texttt{/api/v1/*}. Các module nghiệp vụ (Auth, Dishes, Filters, Interactions, Suggestions) tách trách nhiệm rõ ràng; một \texttt{HealthController} riêng phục vụ giám sát.
+  \item \textbf{Data layer}: PostgreSQL trên Aiven (production) hoặc Docker (local). Prisma quản lý schema, migration, truy vấn. DB còn đóng vai trò cache vĩnh viễn cho dữ liệu Overpass (xem chiến lược DB-first ở mục 4.2.4).
+  \item \textbf{Third-party}: Backend tích hợp \textbf{Overpass API} (OpenStreetMap) để truy vấn nhà hàng theo tag \texttt{amenity} trong bán kính 7 km quanh user. Không yêu cầu API key, chỉ cần header \texttt{User-Agent}. \texttt{placeUrl} của mỗi nhà hàng là một URL Google Maps tĩnh dạng \texttt{https://www.google.com/maps/search/?api=1\&query=lat,lng} — chỉ để client mở navigation, không gọi Google Maps API thực sự.
+  \item \textbf{Quản trị phiên}: JWT access token + refresh token (lưu hash trong DB) để duy trì phiên và rotate.
+\end{itemize}
+
+\subsection{Sơ đồ}
+
+Sơ đồ dưới đây mô tả luồng dữ liệu và quan hệ giữa các thành phần.
+
+\begin{lstlisting}[frame=single]
+flowchart TB
+  subgraph Clients
+    Mobile[Expo React Native app-native]
+    Web[Vite React Frontend]
+  end
+
+  subgraph Backend[NestJS Backend on Render]
+    API[REST API /api/v1/*]
+    Guard[JWT Auth Guard + GlobalExceptionFilter]
+    Auth[Auth Module]
+    Domain[Dishes / Filters / Interactions]
+    Suggest[Suggestions Module - DB-first cache]
+    Prisma[Prisma ORM]
+  end
+
+  DB[(PostgreSQL on Aiven)]
+  Overpass[Overpass API OpenStreetMap]
+
+  Mobile --> API
+  Web --> API
+  API --> Guard
+  Guard --> Auth
+  Guard --> Domain
+  Guard --> Suggest
+  Auth --> Prisma
+  Domain --> Prisma
+  Suggest --> Prisma
+  Prisma --> DB
+  Suggest -.cache miss.-> Overpass
+\end{lstlisting}
+
+\subsection{Luồng yêu cầu gợi ý nhà hàng}
+
+Luồng \texttt{GET /api/v1/suggestions} minh hoạ cách backend kết hợp DB-first cache với Overpass:
+
+\begin{enumerate}
+  \item Mobile gửi request kèm \texttt{lat}, \texttt{lng}, có thể có \texttt{dishType}.
+  \item Backend đọc \texttt{user\_filters} để biết \texttt{maxDistanceKm} (mặc định 5, cap 7) và \texttt{minRating}.
+  \item Suggestions service kiểm tra số nhà hàng đã sync trong bbox quanh user. Đủ ngưỡng → bỏ qua Overpass.
+  \item Nếu thiếu, gọi Overpass một lần (bán kính 7 km, filter amenity), parse cuisine/name để gán \texttt{dishTypes}, bulk insert qua \texttt{createMany skipDuplicates}.
+  \item Đọc DB cuối cùng: filter bbox + Haversine, sort theo distance, slice top N, shuffle nếu là chế độ mixed.
+\end{enumerate}

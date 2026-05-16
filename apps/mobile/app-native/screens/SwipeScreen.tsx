@@ -60,17 +60,8 @@ export function SwipeScreen({
         </View>
 
         <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: "#f87171" }]}>{skippedCount}</Text>
-            <Text style={styles.statLabel}>skipped</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.green }]}>{likedCount}</Text>
-            <Text style={styles.statLabel}>liked</Text>
-          </View>
-          <Pressable style={styles.userButton} onPress={onLogout}>
-            <Text style={styles.userIcon}>{(user?.name ?? "G").slice(0, 1).toUpperCase()}</Text>
+          <Pressable style={styles.logoutButton} onPress={onLogout}>
+            <Text style={styles.logoutIcon}>⇥</Text>
           </Pressable>
         </View>
       </View>
@@ -247,19 +238,20 @@ const styles = StyleSheet.create({
     height: 28,
     backgroundColor: colors.border,
   },
-  userButton: {
+  logoutButton: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.white,
+    borderRadius: 12,
+    backgroundColor: "#fff1f1",
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: "#ffe4e4",
     alignItems: "center",
     justifyContent: "center",
     ...shadow.soft,
   },
-  userIcon: {
-    color: colors.muted,
+  logoutIcon: {
+    color: colors.red,
+    fontSize: 20,
     fontWeight: "800",
   },
   error: {

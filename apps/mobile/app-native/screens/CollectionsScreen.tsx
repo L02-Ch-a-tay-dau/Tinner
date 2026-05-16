@@ -105,7 +105,7 @@ export function CollectionsScreen({
                       </View>
                     </View>
                     <Pressable style={styles.deleteButton} onPress={() => onRemove(food.foodId)}>
-                      <Text style={styles.deleteText}>⌫</Text>
+                      <Text style={styles.deleteText}>✕</Text>
                     </Pressable>
                   </Pressable>
                 ))}

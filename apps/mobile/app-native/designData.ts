@@ -1,4 +1,4 @@
-import { foods as sourceFoods } from "../src/app/data/foods";
+import { foods as sourceFoods } from "./foods";
 import type { NativeFood, NativeRestaurant, UserPreferences } from "./types";
 
 function toNativeRestaurant(restaurant: (typeof sourceFoods)[number]["restaurants"][number]): NativeRestaurant {

@@ -1,8 +1,98 @@
-\section{Deployment Strategy}
-\label{sec:deployment_strategy}
+\section{Chiến lược triển khai}
 
-\subsection{Application and Backend Deployment}
-% Explain how the app and backend were deployed, including cloud providers.
+\subsection{Mục tiêu triển khai}
 
-\subsection{CI/CD Pipelines}
-% Details on CI/CD pipelines (e.g., via GitHub Actions).
+Chiến lược triển khai chia hệ thống thành các phần đặt ở những dịch vụ chuyên biệt, tận dụng managed service để giảm tải vận hành:
+\begin{itemize}
+  \item \textbf{Database}: managed PostgreSQL trên Aiven.
+  \item \textbf{Backend}: container web service trên Render.
+  \item \textbf{Frontend web}: static/edge hosting trên Vercel.
+  \item \textbf{Mobile distribution}: build và phân phối qua EAS (Expo Application Services).
+\end{itemize}
+
+Lưu ý: không tích hợp dịch vụ trả phí nào khác (không Google Maps API, không Foursquare). Toàn bộ dữ liệu nhà hàng đến từ Overpass API (OpenStreetMap), miễn phí và chỉ cần header \texttt{User-Agent}.
+
+\subsection{Công nghệ triển khai}
+
+\begin{itemize}
+  \item \textbf{Database}: PostgreSQL 16 trên \textbf{Aiven} (SSL bắt buộc, \texttt{sslmode=require}).
+  \item \textbf{Backend}: \textbf{Render} (Docker web service, build từ \texttt{apps/backend/Dockerfile}).
+  \item \textbf{FE web}: \textbf{Vercel} (Vite + React).
+  \item \textbf{Mobile}: \textbf{EAS Build} (Expo) — tạo IPA/APK trỏ tới backend production qua \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+\end{itemize}
+
+\subsection{Triển khai Backend trên Render}
+
+Repo có sẵn \texttt{render.yaml} cấu hình backend deploy theo Docker runtime:
+
+\begin{itemize}
+  \item \texttt{type}: \texttt{web}
+  \item \texttt{runtime}: \texttt{docker}
+  \item \texttt{dockerfilePath}: \texttt{./apps/backend/Dockerfile}
+  \item \texttt{dockerContext}: \texttt{.} (lấy toàn monorepo, vì Dockerfile cần \texttt{packages/types})
+  \item \texttt{healthCheckPath}: \texttt{/api/v1/health}
+  \item \texttt{autoDeploy}: \texttt{true}
+  \item \textbf{biến môi trường}:
+  \begin{itemize}
+    \item \texttt{NODE\_ENV=production} (cố định) — đồng thời ẩn validation \texttt{details} khỏi response lỗi qua \texttt{GlobalExceptionFilter}.
+    \item \texttt{PORT=3000} (cố định)
+    \item \texttt{DATABASE\_URL} (\texttt{sync: false}) — connection string Aiven có \texttt{sslmode=require}.
+    \item \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET} (\texttt{sync: false}) — bí mật, sinh ngẫu nhiên.
+    \item \texttt{JWT\_ACCESS\_EXPIRES\_IN=15m}, \texttt{JWT\_REFRESH\_EXPIRES\_IN=30d}.
+  \end{itemize}
+\end{itemize}
+
+Dockerfile của backend chạy \texttt{prisma migrate deploy} ở entrypoint trước khi start app, đảm bảo schema luôn đồng bộ với code.
+
+\subsection{Chiến lược cơ sở dữ liệu trên Aiven}
+
+\begin{itemize}
+  \item Provision PostgreSQL 16 trên Aiven.
+  \item Lấy connection string dạng \texttt{postgres://\ldots?sslmode=require}, paste vào \texttt{DATABASE\_URL} của Render.
+  \item Trong code (\texttt{PrismaService}), driver \texttt{pg} cấu hình \texttt{ssl: \{ rejectUnauthorized: false \}} để chấp nhận self-signed cert chain của Aiven mà không cần preload CA.
+  \item Migration: \texttt{pnpm prisma migrate deploy} trong Docker entrypoint.
+  \item Seed (\texttt{prisma/seed.ts}) chạy thủ công khi cần: nạp 16 món Việt và bộ ảnh dishes.
+  \item Backup: tận dụng tính năng PITR sẵn có của Aiven; không cần thao tác thêm trên ứng dụng.
+\end{itemize}
+
+\subsection{Triển khai Frontend trên Vercel}
+
+Frontend web (tham chiếu) deploy lên Vercel:
+\begin{itemize}
+  \item Import repo, đặt Root Directory tại \texttt{frontend}.
+  \item Build command \texttt{pnpm build}; Output Directory theo mặc định Vite (\texttt{dist}).
+  \item Biến môi trường: URL backend đã deploy trên Render (vd \texttt{VITE\_API\_BASE\_URL}).
+  \item Vercel tự xử lý preview deployment theo branch.
+\end{itemize}
+
+\subsection{Phát hành ứng dụng di động qua EAS}
+
+Mobile build qua \texttt{eas build}:
+\begin{itemize}
+  \item Cấu hình \texttt{eas.json} với profile dev/preview/production.
+  \item Biến môi trường \texttt{EXPO\_PUBLIC\_API\_BASE\_URL} trỏ tới backend Render trong profile production.
+  \item Build iOS/Android binary, phân phối qua Internal Distribution của EAS (TestFlight / Play Internal Track) hoặc qua expo dev client cho team test.
+\end{itemize}
+
+\subsection{CI/CD và Vận hành}
+
+Render tự deploy mỗi khi push commit lên branch chính nhờ \texttt{autoDeploy: true}. Để tăng độ tin cậy, có thể bổ sung:
+
+\begin{itemize}
+  \item CI trước merge (lint + \texttt{tsc --noEmit} + Jest) để chặn lỗi syntax/type rời vào production.
+  \item Monitoring/alert dựa trên health check \texttt{/api/v1/health} (Render có sẵn auto-restart khi health check fail).
+  \item Tách môi trường \texttt{dev / staging / prod} với 3 Render service riêng + 3 Aiven DB riêng nếu cần.
+  \item Tracking lỗi: cân nhắc thêm Sentry hoặc Render log streaming để gom log của \texttt{GlobalExceptionFilter}.
+\end{itemize}
+
+\subsection{Tóm tắt}
+
+Chiến lược triển khai phù hợp MVP và vẫn mở rộng tốt:
+\begin{itemize}
+  \item \textbf{Aiven} giảm rủi ro vận hành DB nhờ managed PITR + SSL.
+  \item \textbf{Render} chạy backend NestJS dạng container, autoDeploy theo \texttt{render.yaml}, health check tự động.
+  \item \textbf{Vercel} edge hosting cho frontend web tham chiếu.
+  \item \textbf{EAS} build và phân phối mobile.
+  \item Chi phí bên ngoài tối thiểu: không gọi API trả phí, chỉ dùng Overpass (miễn phí) cho dữ liệu nhà hàng.
+\end{itemize}
+

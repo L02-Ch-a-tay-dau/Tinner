@@ -1,52 +1,52 @@
-\section{User Experience}
+\section{Trải nghiệm người dùng}
 \label{sec:user_experience}
 
-\subsection{Detailed User Flow}
-The user flow for the Tinner Minimum Viable Product (MVP) is designed to be intuitive and engaging, focusing on two primary journeys: discovering dishes and managing saved choices.
+\subsection{Luồng người dùng chi tiết}
+Luồng người dùng cho Sản phẩm khả thi tối thiểu (MVP) của Tinner được thiết kế trực quan và hấp dẫn, tập trung vào hai hành trình chính: khám phá các món ăn và quản lý các lựa chọn đã lưu.
 
-\subsubsection{Feature 1: Swipe to Discover and Save Dishes}
-This feature serves as the primary discovery mechanism, presenting users with nearby food options one at a time to reduce cognitive load. The flow is as follows:
+\subsubsection{Tính năng 1: Vuốt để khám phá và lưu món ăn}
+Tính năng này đóng vai trò là cơ chế khám phá chính, trình bày cho người dùng các tùy chọn thực phẩm gần đó tại một thời điểm để giảm tải nhận thức. Quy trình như sau:
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{images/Userflow_1.drawio.png}
-    \caption{Feature 1: Swipe to Discover and Save Dishes}
+    \caption{Tính năng 1: Vuốt để khám phá và lưu món ăn}
     \label{fig:Userflow_1}
     \hspace{0.02\textwidth}
 \end{figure}
 \begin{enumerate}
-    \item \textbf{Initialization:} The user opens the application. If it is their first session, the system requests location permissions to fetch nearby dining options.
-    \item \textbf{Discovery Screen:} The system displays a dish card featuring a high-quality image, dish name, price, rating, distance, and the restaurant's name.
-    \item \textbf{User Actions:} The user evaluates the dish and can perform one of three interactions:
+    \item \textbf{Khởi tạo:} Người dùng mở ứng dụng. Nếu đây là phiên đầu tiên của họ, hệ thống sẽ yêu cầu quyền truy cập vị trí để lấy các tùy chọn ăn uống gần đó.
+    \item \textbf{Màn hình khám phá:} Hệ thống hiển thị một thẻ món ăn bao gồm hình ảnh chất lượng cao, tên món ăn, giá cả, xếp hạng, khoảng cách và tên nhà hàng.
+    \item \textbf{Hành động của người dùng:} Người dùng đánh giá món ăn và có thể thực hiện một trong ba tương tác:
     \begin{itemize}
-        \item \textbf{Swipe Left:} Skip the dish.
-        \item \textbf{Swipe Right:} Save the dish to their personal ``Want to Try'' list.
-        \item \textbf{Tap Navigate:} View detailed restaurant information and open Google Maps for immediate directions.
+        \item \textbf{Vuốt sang trái (Swipe Left):} Bỏ qua món ăn.
+        \item \textbf{Vuốt sang phải (Swipe Right):} Lưu món ăn vào danh sách "Muốn thử" cá nhân của họ.
+        \item \textbf{Nhấn Điều hướng (Tap Navigate):} Xem thông tin chi tiết về nhà hàng và mở Google Maps để nhận chỉ đường ngay lập tức.
     \end{itemize}
-    \item \textbf{Continuity:} After an interaction, the system instantly presents the next available dish. If no more dishes match the current location or filters, an ``end of stack'' notification is displayed.
+    \item \textbf{Tính liên tục:} Sau một tương tác, hệ thống ngay lập tức trình bày món ăn tiếp theo có sẵn. Nếu không còn món ăn nào phù hợp với vị trí hoặc bộ lọc hiện tại, một thông báo "hết thẻ" sẽ được hiển thị.
 \end{enumerate}
 
-\subsubsection{Feature 2: Manage ``Want to Try'' List}
-This feature transforms the initial discovery phase into an actionable decision-making process by allowing users to review their liked items.
+\subsubsection{Tính năng 2: Quản lý danh sách ``Muốn thử''}
+Tính năng này chuyển đổi giai đoạn khám phá ban đầu thành một quy trình ra quyết định có thể hành động bằng cách cho phép người dùng xem lại các mục họ đã thích.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=1\textwidth]{images/Userflow_2.drawio.png}
-    \caption{Feature 2: Manage ``Want to Try'' List}
+    \caption{Tính năng 2: Quản lý danh sách ``Muốn thử''}
     \label{fig:Userflow_2}
     \hspace{0.02\textwidth}
 \end{figure}
 \begin{enumerate}
-    \item \textbf{Accessing the List:} The user navigates to the ``Want to Try'' section from the main swipe interface.
-    \item \textbf{Reviewing Options:} The system presents a structured list of all previously saved dishes, enabling direct comparison.
-    \item \textbf{Decision Actions:} The user can manage their selections by:
+    \item \textbf{Truy cập danh sách:} Người dùng điều hướng đến phần ``Muốn thử'' từ giao diện vuốt chính.
+    \item \textbf{Xem lại các tùy chọn:} Hệ thống trình bày một danh sách có cấu trúc gồm tất cả các món ăn đã lưu trước đó, cho phép so sánh trực tiếp.
+    \item \textbf{Hành động quyết định:} Người dùng có thể quản lý các lựa chọn của mình bằng cách:
     \begin{itemize}
-        \item \textbf{Viewing Details:} Accessing the comprehensive dish and restaurant detail screen to get directions via mapping services.
-        \item \textbf{Removing Items:} Deleting a dish from the list if they lose interest. The system handles empty states gracefully if all items are removed.
-        \item \textbf{Returning:} Navigating back to the main swipe screen to continue discovering new food.
+        \item \textbf{Xem chi tiết:} Truy cập màn hình chi tiết món ăn và nhà hàng để nhận chỉ đường thông qua các dịch vụ bản đồ.
+        \item \textbf{Xóa mục:} Xóa một món ăn khỏi danh sách nếu họ không còn quan tâm. Hệ thống xử lý các trạng thái danh sách trống một cách mượt mà nếu tất cả các mục bị xóa.
+        \item \textbf{Quay lại:} Điều hướng quay lại màn hình vuốt chính để tiếp tục khám phá món ăn mới.
     \end{itemize}
 \end{enumerate}
 
-\subsection{Screenshots}
-The following screenshots illustrate the core navigation and user interactions within the application, demonstrating the "Visual-First" philosophy and intuitive user interface.
+\subsection{Ảnh chụp màn hình}
+Các ảnh chụp màn hình sau đây minh họa các tương tác điều hướng và người dùng cốt lõi trong ứng dụng, thể hiện triết lý "Ưu tiên hình ảnh" (Visual-First) và giao diện người dùng trực quan.
 
 \begin{figure}[htbp]
     \centering
@@ -55,7 +55,7 @@ The following screenshots illustrate the core navigation and user interactions w
     \includegraphics[width=0.3\textwidth]{images/Swipe_1.jpg}
     \hspace{0.02\textwidth}
     \includegraphics[width=0.3\textwidth]{images/Swipe_2.jpg}
-    \caption{From left to right: Login Screen, Discovery (Swipe) Interface displaying dish information, and Swipe Interaction.}
+    \caption{Từ trái sang phải: Màn hình đăng nhập, Giao diện khám phá (Vuốt) hiển thị thông tin món ăn và Tương tác vuốt.}
     \label{fig:screenshots_1}
 \end{figure}
 
@@ -66,6 +66,6 @@ The following screenshots illustrate the core navigation and user interactions w
     \includegraphics[width=0.3\textwidth]{images/Saved.jpg}
     \hspace{0.02\textwidth}
     \includegraphics[width=0.3\textwidth]{images/Profile.jpg}
-    \caption{From left to right: Integrated Map \& Navigation, ``Want to Try'' (Saved) List, and User Profile.}
+    \caption{Từ trái sang phải: Tích hợp Bản đồ \& Điều hướng, Danh sách "Muốn thử" (Đã lưu) và Hồ sơ người dùng.}
     \label{fig:screenshots_2}
 \end{figure}

@@ -1,4 +1,4 @@
-\section{Testing Coverage Report}
+\section{Báo cáo độ bao phủ kiểm thử}
 \label{sec:testing_coverage}
 
 \subsection{Giới thiệu Jest và các công cụ testing}
@@ -33,7 +33,7 @@ Bên cạnh Jest, chúng em còn kết hợp với các công cụ bổ trợ kh
 \end{itemize}
 
 
-\subsection{Tiêu chuẩn độ bao phủ (Coverage Standards)}
+\subsection{Tiêu chuẩn độ bao phủ}
 Để đảm bảo chất lượng phần mềm và hạn chế tối đa lỗi phát sinh, nhóm chúng em đã đặt ra các tiêu chuẩn cụ thể về độ bao phủ mã nguồn (Code Coverage) như sau:
 
 \begin{itemize}
@@ -66,7 +66,7 @@ src/dishes (Món ăn) & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Auth (Xác thực)}
+\subsubsection{Module Xác thực}
 Bảng dưới đây thể hiện độ bao phủ của các thành phần trong hệ thống xác thực người dùng:
 \begin{table}[H]
 \centering
@@ -79,7 +79,7 @@ jwt.strategy.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Suggestions (Gợi ý món ăn)}
+\subsubsection{Module Gợi ý món ăn}
 Module này chịu trách nhiệm tìm kiếm nhà hàng từ Overpass API và Foursquare, đây là phần có logic phức tạp nhất:
 \begin{table}[H]
 \centering
@@ -93,7 +93,7 @@ suggestions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Interactions (Tương tác người dùng)}
+\subsubsection{Module Tương tác người dùng}
 Kiểm thử các hành động Like/Dislike món ăn và lưu trữ nhà hàng:
 \begin{table}[H]
 \centering
@@ -105,7 +105,7 @@ interactions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Filters \& Dishes (Bộ lọc và Món ăn)}
+\subsubsection{Module Bộ lọc và Món ăn}
 Độ bao phủ của các module quản lý danh mục món ăn và bộ lọc người dùng:
 \begin{table}[H]
 \centering
@@ -120,7 +120,7 @@ dishes.service.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 
 
 
-\subsection{Các kịch bản kiểm thử API (Backend API Test Cases)}
+\subsection{Các kịch bản kiểm thử API}
 Để đảm bảo tính đúng đắn của các nghiệp vụ, chúng em đã thực hiện kiểm thử trên các kịch bản quan trọng sau:
 
 \begin{enumerate}
