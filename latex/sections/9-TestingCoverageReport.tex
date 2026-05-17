@@ -66,6 +66,13 @@ src/dishes (Món ăn) & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/test-cov.png}
+    \caption{Kết quả lệnh kiểm tra Code Coverage trên Terminal}
+    \label{fig:test_cov}
+\end{figure}
+
 \subsubsection{Module Auth (Xác thực)}
 Bảng dưới đây thể hiện độ bao phủ của các thành phần trong hệ thống xác thực người dùng:
 \begin{table}[H]
@@ -170,11 +177,27 @@ app.e2e.ts & 2 & health check, root path check \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Nhận xét kết quả E2E}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/test-e2e.png}
+    \caption{Kết quả lệnh kiểm thử End-to-End trên Terminal}
+    \label{fig:test_e2e}
+\end{figure}
+
+\subsubsection{Phương pháp tiếp cận và Cấu trúc kiểm thử E2E}
+Khác với Unit Test chỉ tập trung vào một Service hay Controller đơn lẻ, kiểm thử E2E trong dự án được thiết kế để đánh giá sự tích hợp của toàn bộ chu trình xử lý request. Quá trình này được thực hiện thông qua các công cụ và phương pháp sau:
 \begin{itemize}
-    \item \textbf{Tính toàn vẹn:} Hệ thống đảm bảo các luồng quan trọng như Đăng nhập (Auth), Gợi ý (Suggestions) và Món ăn (Dishes) hoạt động mượt mà khi kết hợp giữa Controller, Service và Prisma Database.
-    \item \textbf{Độ tin cậy:} Các phản hồi HTTP (200 OK, 201 Created, 401 Unauthorized) đều trả về chính xác theo đúng thiết kế của API, cho thấy hệ thống xử lý lỗi tốt trong môi trường thực tế.
-    \item \textbf{Hiệu suất:} Thời gian phản hồi trung bình của mỗi test case rất nhanh, đảm bảo trải nghiệm người dùng trên ứng dụng Mobile sẽ ổn định.
+    \item \textbf{Mô phỏng HTTP Request bằng Supertest:} Thư viện \texttt{supertest} được sử dụng để giả lập các yêu cầu HTTP (GET, POST, PUT, DELETE) gửi trực tiếp đến ứng dụng NestJS. Điều này giúp kiểm chứng chính xác các mã lỗi HTTP (Status Codes), cấu trúc JSON trả về và các quy tắc xác thực dữ liệu đầu vào (Validation Pipes).
+    \item \textbf{Cơ chế Subcutaneous Testing:} Thay vì kết nối với một cơ sở dữ liệu PostgreSQL thực tế, dự án áp dụng kỹ thuật giả lập (mocking) ở tầng Database. Thông qua \texttt{overrideProvider(PrismaService)}, các truy vấn cơ sở dữ liệu được kiểm soát hoàn toàn. Nhờ vậy, 19 kịch bản E2E có thể hoàn thành xuất sắc và ổn định chỉ trong khoảng 2 giây.
+    \item \textbf{Giả lập xác thực (Mocking Guards):} Đối với các API yêu cầu quyền truy cập (Protected Routes), \texttt{JwtAuthGuard} được làm giả lập để cung cấp thông tin người dùng ảo (\texttt{req.user}). Việc này giúp kiểm thử trực tiếp các logic nghiệp vụ bên trong mà không cần thực hiện lại quy trình đăng nhập lấy Token cho mỗi test case riêng biệt.
+\end{itemize}
+
+\subsubsection{Đánh giá kết quả kiểm thử E2E}
+Toàn bộ 19/19 kịch bản kiểm thử E2E phân bổ trên 6 Test Suites đều vượt qua thành công (100\% Pass Rate). Qua đó, hệ thống chứng minh được:
+\begin{itemize}
+    \item \textbf{Tính toàn vẹn của luồng dữ liệu:} Sự phối hợp giữa Routing, Validation DTO, Controller và Service hoạt động trơn tru. Các ngoại lệ (Exceptions) như trùng lặp email khi đăng ký hay sai mật khẩu đều được tầng Exception Filter bắt lại và xử lý trả về đúng định dạng lỗi.
+    \item \textbf{Độ tin cậy của API:} Các phản hồi HTTP (200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found) đều được phản hồi chính xác theo đúng tài liệu thiết kế API.
+    \item \textbf{Tối ưu quy trình CI/CD:} Nhờ kiến trúc test không phụ thuộc vào các dịch vụ bên thứ 3 (như Database hay Overpass API), bộ E2E test rất nhẹ và không bị "flaky" (lúc pass lúc fail). Điều này tạo tiền đề vững chắc để tích hợp vào các luồng kiểm tra tự động (CI/CD) trong tương lai.
 \end{itemize}
 
 \subsection{Gap Analysis and Code Quality}
