@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -14,7 +16,20 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "plugins": ["expo-secure-store", "expo-location"],
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "hcmut-after-graduate"
+        }
+      ],
+      "@sentry/react-native",
+      "expo-asset"
+    ],
     "extra": {
       "apiBaseUrl": "use EXPO_PUBLIC_API_BASE_URL from .env"
     }

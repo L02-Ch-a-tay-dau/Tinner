@@ -29,5 +29,8 @@
       "prisma",
       "unrs-resolver"
     ]
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "^20.1.3"
   }
 }

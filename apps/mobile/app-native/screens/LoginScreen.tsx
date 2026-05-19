@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
 import { colors, shadow, sharedStyles, spacing } from "../theme";
-
+// 1. Import Sentry
+import * as Sentry from '@sentry/react-native';
 interface LoginScreenProps {
   email: string;
   password: string;
@@ -24,6 +25,20 @@ export function LoginScreen({
   onGuestLogin,
   onGoToSignup,
 }: LoginScreenProps) {
+
+  // // 2. Hàm gây lỗi thử nghiệm
+  // const handleTestSentry = () => {
+  //   // Cách 1: Gửi một tin nhắn thông báo (không gây crash)
+  //   Sentry.captureMessage("User clicked Test Sentry button");
+
+  //   // Cách 2: Gây lỗi crash thực sự sau 500ms để bạn kịp thấy thông báo
+  //   Alert.alert("Sentry Test", "Ứng dụng sẽ gây lỗi và gửi báo cáo sau 1 giây.");
+    
+  //   setTimeout(() => {
+  //     throw new Error("Tinner App Test Error: " + new Date().toISOString());
+  //   }, 1000);
+  // };
+
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
@@ -34,6 +49,13 @@ export function LoginScreen({
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Log in to continue swiping</Text>
         </View>
+        {/* Nút Test Sentry (Thêm mới vào đây) */}
+        <Pressable 
+          style={[styles.guestButton, { borderColor: colors.orange, marginTop: 10 }]} 
+          onPress={handleTestSentry}
+        >
+          <Text style={[styles.guestText, { color: colors.orange }]}>🛠 Debug: Trigger Sentry Error</Text>
+        </Pressable>
 
         {!!error && <Text style={sharedStyles.error}>{error}</Text>}
 
