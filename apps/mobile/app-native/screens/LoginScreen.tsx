@@ -11,6 +11,7 @@ interface LoginScreenProps {
   onPasswordChange: (value: string) => void;
   onLogin: () => void;
   onGuestLogin: () => void;
+  onGoToSignup: () => void;
 }
 
 export function LoginScreen({
@@ -22,6 +23,7 @@ export function LoginScreen({
   onPasswordChange,
   onLogin,
   onGuestLogin,
+  onGoToSignup,
 }: LoginScreenProps) {
 
   // 2. Hàm gây lỗi thử nghiệm
@@ -104,9 +106,11 @@ export function LoginScreen({
           <Text style={styles.guestText}>Quick Login as Guest</Text>
         </Pressable>
 
-        <Text style={styles.signupText}>
-          Don't have an account? <Text style={styles.signupLink}>Sign Up</Text>
-        </Text>
+        <Pressable onPress={onGoToSignup} hitSlop={8}>
+          <Text style={styles.signupText}>
+            Don't have an account? <Text style={styles.signupLink}>Sign Up</Text>
+          </Text>
+        </Pressable>
 
         <View style={styles.demoBox}>
           <Text style={styles.demoText}>

@@ -1,44 +1,79 @@
 \babel@toc {vietnamese}{}\relax 
-\contentsline {section}{\numberline {0.1}Introduction}{4}{section.0.1}%
-\contentsline {subsection}{\numberline {0.1.1}Problem Statement}{4}{subsection.0.1.1}%
-\contentsline {subsection}{\numberline {0.1.2}Objectives and Purpose}{4}{subsection.0.1.2}%
-\contentsline {subsection}{\numberline {0.1.3}Real-world Need and Potential Impact}{4}{subsection.0.1.3}%
+\contentsline {section}{\numberline {0.1}Introduction}{3}{section.0.1}%
+\contentsline {subsection}{\numberline {0.1.1}Problem Statement}{3}{subsection.0.1.1}%
+\contentsline {subsection}{\numberline {0.1.2}Objectives and Purpose}{3}{subsection.0.1.2}%
+\contentsline {subsection}{\numberline {0.1.3}Real-world Need and Potential Impact}{3}{subsection.0.1.3}%
 \contentsline {section}{\numberline {0.2}Approach and Methodology}{4}{section.0.2}%
 \contentsline {subsection}{\numberline {0.2.1}Development Process}{4}{subsection.0.2.1}%
 \contentsline {subsection}{\numberline {0.2.2}Collaboration Tools}{4}{subsection.0.2.2}%
 \contentsline {subsection}{\numberline {0.2.3}Decision-making Rationale}{4}{subsection.0.2.3}%
-\contentsline {section}{\numberline {0.3}Application Features and Functionality}{4}{section.0.3}%
-\contentsline {subsection}{\numberline {0.3.1}Core Features (MVP)}{4}{subsection.0.3.1}%
-\contentsline {subsection}{\numberline {0.3.2}Advanced Functionalities}{4}{subsection.0.3.2}%
-\contentsline {section}{\numberline {0.4}Implementation Details}{4}{section.0.4}%
-\contentsline {subsection}{\numberline {0.4.1}Tools, Frameworks, and Languages}{4}{subsection.0.4.1}%
-\contentsline {section}{\numberline {0.5}User Experience}{4}{section.0.5}%
-\contentsline {subsection}{\numberline {0.5.1}Detailed User Flow}{4}{subsection.0.5.1}%
-\contentsline {subsection}{\numberline {0.5.2}Wireframes and Screenshots}{4}{subsection.0.5.2}%
-\contentsline {section}{\numberline {0.6}System Architecture}{4}{section.0.6}%
-\contentsline {subsection}{\numberline {0.6.1}Architecture Overview}{4}{subsection.0.6.1}%
-\contentsline {section}{\numberline {0.7}Web Service Design}{4}{section.0.7}%
-\contentsline {subsection}{\numberline {0.7.1}Backend Services}{4}{subsection.0.7.1}%
-\contentsline {subsection}{\numberline {0.7.2}Best Practices}{4}{subsection.0.7.2}%
-\contentsline {section}{\numberline {0.8}Deployment Strategy}{4}{section.0.8}%
-\contentsline {subsection}{\numberline {0.8.1}Application and Backend Deployment}{4}{subsection.0.8.1}%
-\contentsline {subsection}{\numberline {0.8.2}CI/CD Pipelines}{4}{subsection.0.8.2}%
-\contentsline {section}{\numberline {0.9}Testing Coverage Report}{4}{section.0.9}%
-\contentsline {subsection}{\numberline {0.9.1}Code Coverage Metrics}{4}{subsection.0.9.1}%
-\contentsline {subsection}{\numberline {0.9.2}Gap Analysis and Code Quality}{4}{subsection.0.9.2}%
-\contentsline {section}{\numberline {0.10}User Satisfaction Survey Analysis and User Behavior Analytics}{4}{section.0.10}%
-\contentsline {subsection}{\numberline {0.10.1}Feedback and Survey Responses}{4}{subsection.0.10.1}%
-\contentsline {subsection}{\numberline {0.10.2}User Behavior Metrics}{4}{subsection.0.10.2}%
-\contentsline {section}{\numberline {0.11}Project Evaluation and Areas for Improvement}{4}{section.0.11}%
-\contentsline {subsection}{\numberline {0.11.1}Successes and Challenges}{4}{subsection.0.11.1}%
-\contentsline {subsection}{\numberline {0.11.2}Future Iterations}{4}{subsection.0.11.2}%
-\contentsline {section}{\numberline {0.12}Runnable Product}{4}{section.0.12}%
-\contentsline {subsection}{\numberline {0.12.1}App Compatibility}{4}{subsection.0.12.1}%
-\contentsline {subsection}{\numberline {0.12.2}APK File and Google Drive Link}{4}{subsection.0.12.2}%
-\contentsline {subsection}{\numberline {0.12.3}Backend Integration and Configurations}{4}{subsection.0.12.3}%
-\contentsline {section}{\numberline {0.13}Product Distribution and Survey}{4}{section.0.13}%
-\contentsline {subsection}{\numberline {0.13.1}Promotion and Marketing}{4}{subsection.0.13.1}%
-\contentsline {subsection}{\numberline {0.13.2}Survey Design and Analysis}{4}{subsection.0.13.2}%
-\contentsline {subsection}{\numberline {0.13.3}App Metrics Collector}{4}{subsection.0.13.3}%
-\contentsline {subsection}{\numberline {0.13.4}Feedback Evaluation and Behavior Analytics}{4}{subsection.0.13.4}%
-\contentsline {subsection}{\numberline {0.13.5}User Interaction Evidence}{4}{subsection.0.13.5}%
+\contentsline {section}{\numberline {0.3}Application Features and Functionality}{5}{section.0.3}%
+\contentsline {subsection}{\numberline {0.3.1}Core Features (MVP)}{5}{subsection.0.3.1}%
+\contentsline {subsection}{\numberline {0.3.2}Advanced Functionalities}{5}{subsection.0.3.2}%
+\contentsline {section}{\numberline {0.4}4. Chi tiết triển khai (Implementation Details)}{6}{section.0.4}%
+\contentsline {subsection}{\numberline {0.4.1}4.1 Tổ chức mã nguồn (monorepo)}{6}{subsection.0.4.1}%
+\contentsline {subsection}{\numberline {0.4.2}4.2 Backend triển khai tại \texttt {apps/backend}}{6}{subsection.0.4.2}%
+\contentsline {subsubsection}{\numberline {0.4.2.1}Luồng khởi động và middleware chung}{6}{subsubsection.0.4.2.1}%
+\contentsline {subsubsection}{\numberline {0.4.2.2}Xác thực và phân quyền}{6}{subsubsection.0.4.2.2}%
+\contentsline {subsubsection}{\numberline {0.4.2.3}Các module nghiệp vụ}{7}{subsubsection.0.4.2.3}%
+\contentsline {subsubsection}{\numberline {0.4.2.4}Tầng gợi ý (SuggestionsModule) và tích hợp Overpass}{7}{subsubsection.0.4.2.4}%
+\contentsline {subsubsection}{\numberline {0.4.2.5}Health check}{7}{subsubsection.0.4.2.5}%
+\contentsline {subsection}{\numberline {0.4.3}4.3 Ứng dụng di động triển khai tại \texttt {apps/mobile}}{8}{subsection.0.4.3}%
+\contentsline {subsection}{\numberline {0.4.4}4.4 Giao diện web tham chiếu tại \texttt {frontend}}{8}{subsection.0.4.4}%
+\contentsline {subsection}{\numberline {0.4.5}4.5 Phát triển cục bộ và kiểm thử}{8}{subsection.0.4.5}%
+\contentsline {subsubsection}{\numberline {0.4.5.1}Chạy hệ thống cục bộ bằng Docker Compose}{8}{subsubsection.0.4.5.1}%
+\contentsline {subsubsection}{\numberline {0.4.5.2}Quy trình migration}{8}{subsubsection.0.4.5.2}%
+\contentsline {subsubsection}{\numberline {0.4.5.3}Kiểm thử backend}{9}{subsubsection.0.4.5.3}%
+\contentsline {section}{\numberline {0.5}6. Sơ đồ kiến trúc hệ thống (System Architecture Diagram)}{9}{section.0.5}%
+\contentsline {subsection}{\numberline {0.5.1}6.1 Mô tả kiến trúc tổng quan}{9}{subsection.0.5.1}%
+\contentsline {subsection}{\numberline {0.5.2}6.2 Sơ đồ (Mermaid)}{9}{subsection.0.5.2}%
+\contentsline {subsection}{\numberline {0.5.3}6.3 Luồng request gợi ý nhà hàng}{10}{subsection.0.5.3}%
+\contentsline {section}{\numberline {0.6}7. Thiết kế dịch vụ web (Web Service Design)}{10}{section.0.6}%
+\contentsline {subsection}{\numberline {0.6.1}7.1 Kiểu dịch vụ và quy ước route}{10}{subsection.0.6.1}%
+\contentsline {subsection}{\numberline {0.6.2}7.2 Xác thực và phân quyền}{11}{subsection.0.6.2}%
+\contentsline {subsection}{\numberline {0.6.3}7.3 Validation, xử lý lỗi và bảo mật}{11}{subsection.0.6.3}%
+\contentsline {subsection}{\numberline {0.6.4}7.4 Tài liệu hoá API (API documentation)}{12}{subsection.0.6.4}%
+\contentsline {section}{\numberline {0.7}8. Chiến lược triển khai (Deployment Strategy)}{12}{section.0.7}%
+\contentsline {subsection}{\numberline {0.7.1}8.1 Mục tiêu triển khai}{12}{subsection.0.7.1}%
+\contentsline {subsection}{\numberline {0.7.2}8.2 Tech stack triển khai}{13}{subsection.0.7.2}%
+\contentsline {subsection}{\numberline {0.7.3}8.3 Triển khai backend trên Render}{13}{subsection.0.7.3}%
+\contentsline {subsection}{\numberline {0.7.4}8.4 Chiến lược DB trên Aiven}{14}{subsection.0.7.4}%
+\contentsline {subsection}{\numberline {0.7.5}8.5 Triển khai frontend trên Vercel}{14}{subsection.0.7.5}%
+\contentsline {subsection}{\numberline {0.7.6}8.6 Phát hành mobile qua EAS}{14}{subsection.0.7.6}%
+\contentsline {subsection}{\numberline {0.7.7}8.7 CI/CD và vận hành}{14}{subsection.0.7.7}%
+\contentsline {subsection}{\numberline {0.7.8}8.8 Tóm tắt}{15}{subsection.0.7.8}%
+\contentsline {section}{\numberline {0.8}User Experience}{15}{section.0.8}%
+\contentsline {subsection}{\numberline {0.8.1}Detailed User Flow}{15}{subsection.0.8.1}%
+\contentsline {subsubsection}{\numberline {0.8.1.1}Feature 1: Swipe to Discover and Save Dishes}{15}{subsubsection.0.8.1.1}%
+\contentsline {subsubsection}{\numberline {0.8.1.2}Feature 2: Manage ``Want to Try'' List}{16}{subsubsection.0.8.1.2}%
+\contentsline {subsection}{\numberline {0.8.2}Screenshots}{17}{subsection.0.8.2}%
+\contentsline {section}{\numberline {0.9}Testing Coverage Report}{18}{section.0.9}%
+\contentsline {subsection}{\numberline {0.9.1}Giới thiệu Jest và các công cụ testing}{18}{subsection.0.9.1}%
+\contentsline {subsection}{\numberline {0.9.2}Cấu hình môi trường kiểm thử}{19}{subsection.0.9.2}%
+\contentsline {subsection}{\numberline {0.9.3}Tiêu chuẩn độ bao phủ (Coverage Standards)}{19}{subsection.0.9.3}%
+\contentsline {subsection}{\numberline {0.9.4}Kết quả kiểm thử chi tiết}{20}{subsection.0.9.4}%
+\contentsline {subsubsection}{\numberline {0.9.4.1}Module Auth (Xác thực)}{20}{subsubsection.0.9.4.1}%
+\contentsline {subsubsection}{\numberline {0.9.4.2}Module Suggestions (Gợi ý món ăn)}{20}{subsubsection.0.9.4.2}%
+\contentsline {subsubsection}{\numberline {0.9.4.3}Module Interactions (Tương tác người dùng)}{21}{subsubsection.0.9.4.3}%
+\contentsline {subsubsection}{\numberline {0.9.4.4}Module Filters \& Dishes (Bộ lọc và Món ăn)}{21}{subsubsection.0.9.4.4}%
+\contentsline {subsection}{\numberline {0.9.5}Các kịch bản kiểm thử API (Backend API Test Cases)}{21}{subsection.0.9.5}%
+\contentsline {subsection}{\numberline {0.9.6}Phạm vi kiểm thử E2E Layer}{22}{subsection.0.9.6}%
+\contentsline {subsubsection}{\numberline {0.9.6.1}Phương pháp tiếp cận và Cấu trúc kiểm thử E2E}{22}{subsubsection.0.9.6.1}%
+\contentsline {subsubsection}{\numberline {0.9.6.2}Đánh giá kết quả kiểm thử E2E}{23}{subsubsection.0.9.6.2}%
+\contentsline {subsection}{\numberline {0.9.7}Gap Analysis and Code Quality}{24}{subsection.0.9.7}%
+\contentsline {section}{\numberline {0.10}User Satisfaction Survey Analysis and User Behavior Analytics}{24}{section.0.10}%
+\contentsline {subsection}{\numberline {0.10.1}Feedback and Survey Responses}{24}{subsection.0.10.1}%
+\contentsline {subsection}{\numberline {0.10.2}User Behavior Metrics}{24}{subsection.0.10.2}%
+\contentsline {section}{\numberline {0.11}Project Evaluation and Areas for Improvement}{24}{section.0.11}%
+\contentsline {subsection}{\numberline {0.11.1}Successes and Challenges}{24}{subsection.0.11.1}%
+\contentsline {subsection}{\numberline {0.11.2}Future Iterations}{24}{subsection.0.11.2}%
+\contentsline {section}{\numberline {0.12}Runnable Product}{24}{section.0.12}%
+\contentsline {subsection}{\numberline {0.12.1}App Compatibility}{24}{subsection.0.12.1}%
+\contentsline {subsection}{\numberline {0.12.2}APK File and Google Drive Link}{24}{subsection.0.12.2}%
+\contentsline {subsection}{\numberline {0.12.3}Backend Integration and Configurations}{24}{subsection.0.12.3}%
+\contentsline {section}{\numberline {0.13}Product Distribution and Survey}{24}{section.0.13}%
+\contentsline {subsection}{\numberline {0.13.1}Promotion and Marketing}{24}{subsection.0.13.1}%
+\contentsline {subsection}{\numberline {0.13.2}Survey Design and Analysis}{24}{subsection.0.13.2}%
+\contentsline {subsection}{\numberline {0.13.3}App Metrics Collector}{24}{subsection.0.13.3}%
+\contentsline {subsection}{\numberline {0.13.4}Feedback Evaluation and Behavior Analytics}{24}{subsection.0.13.4}%
+\contentsline {subsection}{\numberline {0.13.5}User Interaction Evidence}{24}{subsection.0.13.5}%

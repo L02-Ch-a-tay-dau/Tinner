@@ -146,7 +146,9 @@ export function FoodSwipeCard({
             </Text>
           </View>
           <View style={styles.caloriePill}>
-            <Text style={styles.calorieText}>🔥 {food.calories}</Text>
+            <Text style={styles.calorieText}>
+              {food.cardStats ? `${food.cardStats.emoji} ${food.cardStats.text}` : `🔥 ${food.calories}`}
+            </Text>
           </View>
         </View>
 

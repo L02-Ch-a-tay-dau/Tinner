@@ -1,8 +1,206 @@
 \section{Testing Coverage Report}
 \label{sec:testing_coverage}
 
-\subsection{Code Coverage Metrics}
+\subsection{Giới thiệu Jest và các công cụ testing}
 % Include code coverage metrics from tools like Jest (for backend) or JaCoCo (for Android). Aim for at least 70% coverage on core modules.
 
+Trong dự án Tinner, chúng em sử dụng \textbf{Jest} làm khung thử nghiệm (testing framework) chính cho phần Backend. Jest là một công cụ mạnh mẽ được phát triển bởi Meta, được tối ưu hóa cho các ứng dụng JavaScript và TypeScript (thông qua \texttt{ts-jest}).
+Các lý do chính cho việc lựa chọn Jest bao gồm:
+\begin{itemize}
+    \item \textbf{Tốc độ và hiệu suất:} Jest có khả năng chạy các bài kiểm tra song song, giúp giảm thiểu thời gian thực hiện toàn bộ suite test.
+    \item \textbf{Mocking mạnh mẽ:} Hỗ trợ tạo các đối tượng giả (mocking) một cách dễ dàng, giúp cô lập các module cần kiểm tra (ví dụ: giả lập Database để thực hiện Unit Test).
+    \item \textbf{Tích hợp sẵn Coverage:} Jest tích hợp thư viện Istanbul để tự động tính toán và báo cáo tỷ lệ bao phủ mã nguồn (code coverage) mà không cần cài đặt thêm công cụ bên ngoài.
+\end{itemize}
+Bên cạnh Jest, chúng em còn kết hợp với các công cụ bổ trợ khác như:
+\begin{itemize}
+    \item \textbf{Supertest:} Sử dụng cho việc kiểm thử đầu cuối (E2E Testing), cho phép gửi các yêu cầu HTTP giả lập đến ứng dụng NestJS để kiểm tra luồng xử lý thực tế của API.
+    \item \textbf{Prisma Mocking:} Sử dụng các thư viện giả lập để kiểm tra các Service mà không làm ảnh hưởng đến dữ liệu thực tế trong cơ sở dữ liệu PostgreSQL.
+\end{itemize}
+
+
+\subsection{Cấu hình môi trường kiểm thử}
+Để đảm bảo các bài kiểm tra được thực hiện trong một môi trường ổn định và không ảnh hưởng đến dữ liệu thực tế, dự án đã thiết lập quy trình cấu hình như sau:
+
+\begin{itemize}
+    \item \textbf{Tách biệt môi trường (Environment Isolation):} Sử dụng tệp cấu hình riêng (như \texttt{.env.test}) để định nghĩa các biến môi trường dành riêng cho việc kiểm thử, bao gồm mã khóa bí mật (JWT Secret) giả lập và đường dẫn cơ sở dữ liệu tạm thời.
+    \item \textbf{Cấu hình Jest:} Các thông số kỹ thuật của Jest được định nghĩa trong tệp \texttt{jest.config.ts} hoặc trong tệp \texttt{package.json}. Tại đây, chúng em cấu hình \texttt{moduleNameMapper} để xử lý các đường dẫn tuyệt đối (aliases) và \texttt{testEnvironment} được thiết lập là \texttt{node} cho Backend.
+    \item \textbf{Tự động hóa qua Scripts:} Các lệnh kiểm thử được tích hợp sẵn vào quy trình quản lý gói của dự án, cho phép thực hiện nhanh chóng qua các lệnh:
+    \begin{itemize}
+        \item \texttt{pnpm test}: Chạy toàn bộ các bài Unit Test.
+        \item \texttt{pnpm test:cov}: Thực hiện kiểm thử và tự động xuất báo cáo độ bao phủ mã nguồn dưới dạng HTML và văn bản.
+    \end{itemize}
+    \item \textbf{Xử lý Cơ sở dữ liệu:} Đối với các bài kiểm tra tích hợp (Integration Tests), chúng em sử dụng giải pháp \textbf{Database Mocking} hoặc kết nối với một container PostgreSQL tạm thời trong Docker để đảm bảo tính toàn vẹn của dữ liệu gốc.
+\end{itemize}
+
+
+\subsection{Tiêu chuẩn độ bao phủ (Coverage Standards)}
+Để đảm bảo chất lượng phần mềm và hạn chế tối đa lỗi phát sinh, nhóm chúng em đã đặt ra các tiêu chuẩn cụ thể về độ bao phủ mã nguồn (Code Coverage) như sau:
+
+\begin{itemize}
+    \item \textbf{Mục tiêu tổng thể:} Đạt ít nhất \textbf{70\%} độ bao phủ trên toàn bộ mã nguồn của hệ thống.
+    \item \textbf{Các module cốt lõi (Core Modules):} Đối với các phần quan trọng như \textit{Auth Service}, \textit{Suggestions Service} và \textit{Interactions Service}, mục tiêu độ bao phủ được đặt ra là trên \textbf{85\%} để đảm bảo các luồng xử lý nghiệp vụ chính không bị sai sót.
+    \item \textbf{Các chỉ số đánh giá:}
+    \begin{itemize}
+        \item \textbf{Statement Coverage:} Đảm bảo hầu hết các dòng lệnh đều được thực thi ít nhất một lần.
+        \item \textbf{Branch Coverage:} Kiểm tra đầy đủ các điều kiện rẽ nhánh (\texttt{if/else}, \texttt{switch/case}) để tránh bỏ sót các trường hợp ngoại lệ.
+        \item \textbf{Function Coverage:} Đảm bảo tất cả các hàm và phương thức quan trọng đều được gọi trong quá trình kiểm thử.
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Kết quả kiểm thử chi tiết}
+Dưới đây là bảng tổng hợp độ bao phủ mã nguồn (Code Coverage) cho các module chính trong thư mục \texttt{src} của Backend:
+
+\begin{table}[H]
+\centering
+\caption{Bảng tổng hợp Code Coverage theo Module}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Module} & \textbf{\% Stmts} & \textbf{\% Branch} & \textbf{\% Funcs} & \textbf{\% Lines} \\ \hline
+Toàn bộ hệ thống & 97.44 & 79.68 & 98.03 & 97.33 \\ \hline
+src/auth (Xác thực) & 100.00 & 80.64 & 100.00 & 100.00 \\ \hline
+src/suggestions (Gợi ý) & 93.10 & 85.36 & 93.10 & 93.12 \\ \hline
+src/interactions (Tương tác) & 100.00 & 81.81 & 100.00 & 100.00 \\ \hline
+src/filters (Bộ lọc) & 100.00 & 78.57 & 100.00 & 100.00 \\ \hline
+src/dishes (Món ăn) & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/test-cov.png}
+    \caption{Kết quả lệnh kiểm tra Code Coverage trên Terminal}
+    \label{fig:test_cov}
+\end{figure}
+
+\subsubsection{Module Auth (Xác thực)}
+Bảng dưới đây thể hiện độ bao phủ của các thành phần trong hệ thống xác thực người dùng:
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{File} & \textbf{\% Stmts} & \textbf{\% Branch} & \textbf{\% Funcs} & \textbf{\% Lines} \\ \hline
+auth.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+auth.service.ts & 100.00 & 84.21 & 100.00 & 100.00 \\ \hline
+jwt.strategy.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Module Suggestions (Gợi ý món ăn)}
+Module này chịu trách nhiệm tìm kiếm nhà hàng từ Overpass API và Foursquare, đây là phần có logic phức tạp nhất:
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{File} & \textbf{\% Stmts} & \textbf{\% Branch} & \textbf{\% Funcs} & \textbf{\% Lines} \\ \hline
+suggestions.service.ts & 80.64 & 70.00 & 87.50 & 80.70 \\ \hline
+overpass.service.ts & 100.00 & 94.73 & 100.00 & 100.00 \\ \hline
+foursquare.service.ts & 100.00 & 87.50 & 100.00 & 100.00 \\ \hline
+suggestions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Module Interactions (Tương tác người dùng)}
+Kiểm thử các hành động Like/Dislike món ăn và lưu trữ nhà hàng:
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{File} & \textbf{\% Stmts} & \textbf{\% Branch} & \textbf{\% Funcs} & \textbf{\% Lines} \\ \hline
+interactions.service.ts & 100.00 & 90.00 & 100.00 & 100.00 \\ \hline
+interactions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Module Filters \& Dishes (Bộ lọc và Món ăn)}
+Độ bao phủ của các module quản lý danh mục món ăn và bộ lọc người dùng:
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{File} & \textbf{\% Stmts} & \textbf{\% Branch} & \textbf{\% Funcs} & \textbf{\% Lines} \\ \hline
+filters.service.ts & 100.00 & 83.33 & 100.00 & 100.00 \\ \hline
+filters.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+dishes.service.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
+\end{tabular}
+\end{table}
+
+
+
+\subsection{Các kịch bản kiểm thử API (Backend API Test Cases)}
+Để đảm bảo tính đúng đắn của các nghiệp vụ, chúng em đã thực hiện kiểm thử trên các kịch bản quan trọng sau:
+
+\begin{enumerate}
+    \item \textbf{Xác thực (Authentication):}
+    \begin{itemize}
+        \item Đăng ký tài khoản mới với đầy đủ thông tin hợp lệ (Thành công).
+        \item Đăng nhập với email và mật khẩu chính xác (Trả về Access Token).
+        \item Đăng nhập với mật khẩu sai (Trả về lỗi 401 Unauthorized).
+        \item Truy cập vào các API bảo mật (như Profile) khi không có Token (Bị từ chối).
+    \end{itemize}
+    
+    \item \textbf{Gợi ý món ăn (Suggestions):}
+    \begin{itemize}
+        \item Lấy danh sách gợi ý khi cung cấp đầy đủ tọa độ \texttt{lat} và \texttt{lng} (Thành công).
+        \item Yêu cầu gợi ý nhưng thiếu tọa độ (Trả về lỗi 400 Bad Request do Validation).
+        \item Lọc danh sách gợi ý theo loại món ăn (Ví dụ: chỉ lấy quán "Phở").
+    \end{itemize}
+    
+    \item \textbf{Tương tác người dùng (Interactions):}
+    \begin{itemize}
+        \item Thực hiện hành động "Like" một món ăn (Lưu vào cơ sở dữ liệu).
+        \item Thực hiện lưu một nhà hàng vào danh sách yêu thích (Thành công).
+    \end{itemize}
+    
+    \item \textbf{Bộ lọc (Filters):}
+    \begin{itemize}
+        \item Cập nhật khoảng cách tìm kiếm tối đa và đánh giá tối thiểu (Thành công).
+        \item Kiểm tra xem các gợi ý sau khi cập nhật có tuân thủ đúng bộ lọc mới hay không.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Phạm vi kiểm thử E2E Layer}
+Dưới đây là bảng tổng hợp các kịch bản kiểm thử End-to-End đã được thực hiện để kiểm chứng luồng hoạt động thực tế của hệ thống:
+
+\begin{table}[H]
+\centering
+\caption{Bảng tổng hợp kịch bản kiểm thử E2E}
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{E2E Module} & \textbf{Số tests} & \textbf{Các scenarios được cover} \\ \hline
+auth.e2e.ts & 5 & register new user, login, get profile with token \\ \hline
+suggestions.e2e.ts & 4 & fetch restaurants around, sync from Overpass \\ \hline
+interactions.e2e.ts & 3 & like dish flow, save restaurant, check swiped history \\ \hline
+dishes.e2e.ts & 3 & get all categories, list dishes by type \\ \hline
+filters.e2e.ts & 2 & update and apply filters to results \\ \hline
+app.e2e.ts & 2 & health check, root path check \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/test-e2e.png}
+    \caption{Kết quả lệnh kiểm thử End-to-End trên Terminal}
+    \label{fig:test_e2e}
+\end{figure}
+
+\subsubsection{Phương pháp tiếp cận và Cấu trúc kiểm thử E2E}
+Khác với Unit Test chỉ tập trung vào một Service hay Controller đơn lẻ, kiểm thử E2E trong dự án được thiết kế để đánh giá sự tích hợp của toàn bộ chu trình xử lý request. Quá trình này được thực hiện thông qua các công cụ và phương pháp sau:
+\begin{itemize}
+    \item \textbf{Mô phỏng HTTP Request bằng Supertest:} Thư viện \texttt{supertest} được sử dụng để giả lập các yêu cầu HTTP (GET, POST, PUT, DELETE) gửi trực tiếp đến ứng dụng NestJS. Điều này giúp kiểm chứng chính xác các mã lỗi HTTP (Status Codes), cấu trúc JSON trả về và các quy tắc xác thực dữ liệu đầu vào (Validation Pipes).
+    \item \textbf{Cơ chế Subcutaneous Testing:} Thay vì kết nối với một cơ sở dữ liệu PostgreSQL thực tế, dự án áp dụng kỹ thuật giả lập (mocking) ở tầng Database. Thông qua \texttt{overrideProvider(PrismaService)}, các truy vấn cơ sở dữ liệu được kiểm soát hoàn toàn. Nhờ vậy, 19 kịch bản E2E có thể hoàn thành xuất sắc và ổn định chỉ trong khoảng 2 giây.
+    \item \textbf{Giả lập xác thực (Mocking Guards):} Đối với các API yêu cầu quyền truy cập (Protected Routes), \texttt{JwtAuthGuard} được làm giả lập để cung cấp thông tin người dùng ảo (\texttt{req.user}). Việc này giúp kiểm thử trực tiếp các logic nghiệp vụ bên trong mà không cần thực hiện lại quy trình đăng nhập lấy Token cho mỗi test case riêng biệt.
+\end{itemize}
+
+\subsubsection{Đánh giá kết quả kiểm thử E2E}
+Toàn bộ 19/19 kịch bản kiểm thử E2E phân bổ trên 6 Test Suites đều vượt qua thành công (100\% Pass Rate). Qua đó, hệ thống chứng minh được:
+\begin{itemize}
+    \item \textbf{Tính toàn vẹn của luồng dữ liệu:} Sự phối hợp giữa Routing, Validation DTO, Controller và Service hoạt động trơn tru. Các ngoại lệ (Exceptions) như trùng lặp email khi đăng ký hay sai mật khẩu đều được tầng Exception Filter bắt lại và xử lý trả về đúng định dạng lỗi.
+    \item \textbf{Độ tin cậy của API:} Các phản hồi HTTP (200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found) đều được phản hồi chính xác theo đúng tài liệu thiết kế API.
+    \item \textbf{Tối ưu quy trình CI/CD:} Nhờ kiến trúc test không phụ thuộc vào các dịch vụ bên thứ 3 (như Database hay Overpass API), bộ E2E test rất nhẹ và không bị "flaky" (lúc pass lúc fail). Điều này tạo tiền đề vững chắc để tích hợp vào các luồng kiểm tra tự động (CI/CD) trong tương lai.
+\end{itemize}
+
 \subsection{Gap Analysis and Code Quality}
+
+
 % Analyze the tested components, identify any gaps, and suggest improvements for code quality and reliability.
