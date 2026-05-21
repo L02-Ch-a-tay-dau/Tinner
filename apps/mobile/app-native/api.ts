@@ -25,7 +25,7 @@ interface RestaurantDto {
   priceLevel: number | null;
   dishTypes: string[];
   distanceKm?: number;
-  foursquareUrl?: string | null;
+  placeUrl?: string | null;
 }
 
 interface DishDto {
@@ -75,7 +75,7 @@ function toNativeRestaurant(restaurant: RestaurantDto, dishType: string): Native
     price,
     isOpen: true,
     image: seededImage(`${dishType}-${restaurant.id}-restaurant`),
-    mapUrl: restaurant.foursquareUrl ?? "",
+    mapUrl: restaurant.placeUrl ?? "",
   };
 }
 
@@ -84,18 +84,39 @@ export function toNativeFood(restaurant: RestaurantDto, dishType: string): Nativ
   const dishImage = dish?.imageUrl ?? null;
   const dishDescription = dish?.description ?? null;
   const nativeRestaurant = toNativeRestaurant(restaurant, dishType);
+  const distanceNum = restaurant.distanceKm ?? 0;
+  const km = `${distanceNum.toFixed(1)} km`;
+  const ratingPart =
+    restaurant.rating != null && restaurant.rating > 0 ? ` · ★${restaurant.rating.toFixed(1)}` : "";
+  const addressLine = restaurant.address ?? restaurant.city ?? "";
 
   return {
     id: `${restaurant.id}-${dishType}`,
     name: restaurant.name,
     cuisine: dishType,
-    description: dishDescription || `${dishType} recommendation near you`,
+    description: dishDescription || (addressLine ? addressLine : `${dishType} near you`),
     image: dishImage || seededImage(`${dishType}-${restaurant.id}-food`),
-    calories: restaurant.city ?? "Restaurant",
-    tags: [`#${dishType.replaceAll(/\s+/g, "")}`, ...(restaurant.dishTypes ?? []).slice(0, 2).map((tag) => `#${tag}`)],
+    calories: addressLine || "Restaurant",
+    cardStats: { emoji: "📍", text: `${km}${ratingPart}` },
+    tags: [
+      `#${dishType.replaceAll(/\s+/g, "")}`,
+      ...(restaurant.dishTypes ?? []).slice(0, 2).map((tag) => `#${String(tag).replaceAll(/\s+/g, "")}`),
+    ],
     dishType,
     restaurants: [nativeRestaurant],
   };
+}
+
+async function extractErrorMessage(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { message?: unknown };
+    if (body && typeof body.message === "string" && body.message.trim().length > 0) {
+      return body.message;
+    }
+  } catch {
+    // response body was not JSON (e.g., HTML error page or empty body)
+  }
+  return `Request failed with status ${response.status}`;
 }
 
 async function request<T>(path: string, token?: string, init?: RequestInit): Promise<T> {
@@ -109,8 +130,8 @@ async function request<T>(path: string, token?: string, init?: RequestInit): Pro
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed with status ${response.status}`);
+    const message = await extractErrorMessage(response);
+    throw new Error(message);
   }
 
   return (await response.json()) as T;
@@ -133,6 +154,21 @@ export async function loginWithApi(email: string, password: string) {
   };
 }
 
+export interface SignupInput {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  fullName?: string;
+}
+
+export async function signupWithApi(input: SignupInput) {
+  await request<AuthResponseDto>("/api/v1/auth/register", undefined, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function getCurrentCoordinates() {
   const permission = await Location.requestForegroundPermissionsAsync();
   if (permission.status !== "granted") {
@@ -149,7 +185,13 @@ export async function getCurrentCoordinates() {
   };
 }
 
-export async function getSuggestionsFromApi(token: string, dishType: string) {
+function pickDishType(restaurant: RestaurantDto, fallback?: string): string {
+  if (fallback) return fallback;
+  const fromRestaurant = restaurant.dishTypes?.[0];
+  return fromRestaurant ?? "restaurant";
+}
+
+export async function getSuggestionsFromApi(token: string, dishType?: string) {
   if (!cachedDishMap) {
     try {
       const dishes = await request<DishDto[]>("/api/v1/dishes");
@@ -161,12 +203,16 @@ export async function getSuggestionsFromApi(token: string, dishType: string) {
 
   const location = await getCurrentCoordinates();
   const params = new URLSearchParams({
-    dishType,
     lat: String(location.coords.latitude),
     lng: String(location.coords.longitude),
   });
+  if (dishType) {
+    params.append("dishType", dishType);
+  }
   const restaurants = await request<RestaurantDto[]>(`/api/v1/suggestions?${params.toString()}`, token);
-  const cards = restaurants.map((restaurant) => toNativeFood(restaurant, dishType));
+  const cards = restaurants.map((restaurant) =>
+    toNativeFood(restaurant, pickDishType(restaurant, dishType)),
+  );
 
   return {
     cards,
