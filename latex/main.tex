@@ -212,13 +212,13 @@
 
 \subsection{4.1 Tổ chức mã nguồn (monorepo)}
 
-Dự án tổ chức theo mô hình monorepo, sử dụng \texttt{pnpm} làm trình quản lý gói/workspace, yêu cầu Node.js 22+. Các thành phần chính:
+Dự án tổ chức theo mô hình monorepo, sử dụng \texttt{pnpm} làm trình quản lý gói/workspace, yêu cầu Node.js 22+. Các thành phần theo vai trò trong sản phẩm mobile:
 
 \begin{itemize}
-  \item \texttt{apps/backend}: Backend REST API xây dựng bằng NestJS 11, dùng Prisma 7 + PostgreSQL.
-  \item \texttt{apps/mobile}: Ứng dụng di động Expo (React Native + TypeScript). Phần native chính nằm trong \texttt{apps/mobile/app-native} (entry: \texttt{AppShell.tsx}, các screen Login/Signup/Swipe/Map/Collections/Filters).
+  \item \texttt{apps/mobile} (\textbf{client chính}): Expo SDK 54 + React Native. Mã UI/flow nằm trong \texttt{app-native} (\texttt{AppShell.tsx}, các screen Login/Signup/Swipe/Map/Collections/Filters).
+  \item \texttt{apps/backend} (\textbf{server}): NestJS 11 + Prisma 7, expose REST API cho app gọi qua HTTPS.
   \item \texttt{packages/types}: DTO/enum dùng chung giữa backend và client.
-  \item \texttt{frontend}: Giao diện web tham chiếu (Vite + React), không bắt buộc cho luồng mobile chính.
+  \item \texttt{frontend} (\textbf{tuỳ chọn}): Vite + React, chỉ là giao diện tham chiếu từ Figma; không nằm trên luồng phát hành APK của đề tài.
 \end{itemize}
 
 \subsection{4.2 Backend triển khai tại \texttt{apps/backend}}
@@ -243,7 +243,7 @@ Hệ thống dùng JWT (\texttt{@nestjs/jwt}, \texttt{passport-jwt}) với 2 tok
 \end{itemize}
 \texttt{JwtAuthGuard} đăng ký toàn cục qua \texttt{APP\_GUARD} trong \texttt{AppModule}; các endpoint công khai đánh dấu bằng decorator \texttt{@Public()} (ví dụ \texttt{/auth/register}, \texttt{/auth/login}, \texttt{/auth/refresh}, \texttt{/health}).
 
-Luồng đăng ký (\texttt{POST /api/v1/auth/register}) yêu cầu \texttt{username} (3--50 ký tự, chữ/số/underscore), \texttt{email}, \texttt{password} (8--128, có chữ và số), \texttt{confirmPassword} và \texttt{fullName} tuỳ chọn. Sau khi tạo user, hệ thống đồng thời khởi tạo bản ghi \texttt{user\_filters} mặc định để các luồng \emph{suggestions} sẵn sàng dùng ngay.
+Luồng đăng ký (\texttt{POST /api/v1/auth/register}) yêu cầu \texttt{username} (3--50 ký tự, chữ/số/underscore), \texttt{email}, \texttt{password} (8--128, có chữ và số), \texttt{confirmPassword}, \texttt{fullName} và \texttt{phone} (tuỳ chọn). Sau khi tạo user, hệ thống đồng thời khởi tạo bản ghi \texttt{user\_filters} mặc định để các luồng \emph{suggestions} sẵn sàng dùng ngay.
 
 \subsubsection{Các module nghiệp vụ}
 
@@ -275,7 +275,11 @@ Cách tiếp cận này giảm độ trễ lần đầu cho một vùng từ và
 
 \subsection{4.3 Ứng dụng di động triển khai tại \texttt{apps/mobile}}
 
-Ứng dụng mobile dùng Expo SDK 54 với React 19 và React Native. Mã native nằm trong \texttt{apps/mobile/app-native}:
+Ứng dụng mobile dùng Expo SDK 54 với React 19 và React Native. Đây là \textbf{frontend sản phẩm}: không deploy lên Vercel/Render như SPA, mà được \textbf{build} thành binary Android (APK) và cài trên thiết bị người dùng.
+
+\subsubsection{Cấu trúc client}
+
+Mã nằm trong \texttt{apps/mobile/app-native}:
 
 \begin{itemize}
   \item \texttt{AppShell.tsx} làm root component, quản lý state phiên đăng nhập, deck swipe và điều hướng giữa các màn hình bằng state machine (\texttt{ScreenName}: \texttt{login | signup | swipe | map | collections | filters}).
@@ -285,11 +289,20 @@ Cách tiếp cận này giảm độ trễ lần đầu cho một vùng từ và
   \item Base URL backend cấu hình qua biến môi trường \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
 \end{itemize}
 
-Để hỗ trợ pnpm monorepo (Metro bundler cần biết về workspace packages), \texttt{apps/mobile/metro.config.js} thêm \texttt{watchFolders}, \texttt{nodeModulesPaths}, bật \texttt{unstable\_enableSymlinks} và \texttt{unstable\_enablePackageExports}, đồng thời block \texttt{apps/backend/dist} khỏi vùng watch.
+\subsubsection{Metro monorepo}
 
-\subsection{4.4 Giao diện web tham chiếu tại \texttt{frontend}}
+\texttt{metro.config.js} cấu hình \texttt{watchFolders}, \texttt{nodeModulesPaths}, \texttt{unstable\_enableSymlinks}, \texttt{unstable\_enablePackageExports}; loại \texttt{apps/backend/dist} khỏi watch để tránh xung đột khi dev.
 
-Thành phần web tham chiếu dùng Vite + React. Phần này phù hợp làm landing/demo hoặc mở rộng dashboard quản trị, có thể triển khai riêng trên Vercel theo chiến lược ở mục 8. Toàn bộ trải nghiệm chính của đề tài vẫn chạy trên mobile.
+\subsubsection{Phát triển và build APK}
+
+\begin{itemize}
+  \item Dev local: \texttt{pnpm dev:mobile} (Expo dev server); API trỏ \texttt{http://10.0.2.2:3000} (Android emulator) hoặc IP LAN (thiết bị thật).
+  \item Build APK: monorepo có script \texttt{deploy:apk} gọi \texttt{pnpm --filter @tinner/mobile apk:build}; \texttt{apps/mobile/eas.json} đã khai báo profile \texttt{preview}/\texttt{production} (Android APK) và biến \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+\end{itemize}
+
+\subsection{4.4 Giao diện web tham chiếu (tuỳ chọn)}
+
+Thư mục \texttt{frontend} (Vite + React) chỉ phục vụ prototype/tham chiếu thiết kế. \textbf{Không} thay thế \texttt{app-native} và \textbf{không} bắt buộc host trên Vercel để hoàn thành sản phẩm mobile. Chỉ khi chạy \texttt{expo start --web} thì Expo mới phục vụ bản web tạm thời --- đó là kênh phụ, khác hẳn APK production.
 
 \subsection{4.5 Phát triển cục bộ và kiểm thử}
 
@@ -310,9 +323,9 @@ Backend dùng Jest cho unit/e2e. Các script trong \texttt{apps/backend/package.
 
 \section{6. Sơ đồ kiến trúc hệ thống (System Architecture Diagram)}
 
-\subsection{6.1 Mô tả kiến trúc tổng quan}
+\subsection{6.1 Mô tả kiến trúc tổng quan (mobile-first)}
 
-Kiến trúc hệ thống theo mô hình client -- server, gồm 4 tầng và một tích hợp third-party duy nhất:
+Kiến trúc sản phẩm gồm \textbf{ba khối runtime bắt buộc} và một tích hợp dữ liệu bên ngoài:
 
 \begin{itemize}
   \item \textbf{Client layer}: Ứng dụng di động Expo/React Native là client chính. Web frontend (Vite + React) đóng vai trò tham chiếu/landing tuỳ chọn.
@@ -324,7 +337,7 @@ Kiến trúc hệ thống theo mô hình client -- server, gồm 4 tầng và m�
 
 \subsection{6.2 Sơ đồ (Mermaid)}
 
-Sơ đồ dưới đây mô tả luồng dữ liệu và quan hệ giữa các thành phần.
+Sơ đồ nhấn mạnh: mobile \textbf{installed app} $\rightarrow$ API \textbf{hosted} $\rightarrow$ DB \textbf{hosted}.
 
 \begin{lstlisting}[frame=single]
 flowchart TB
@@ -368,7 +381,7 @@ Luồng \texttt{GET /api/v1/suggestions} minh hoạ cách backend kết hợp DB
   \item Suggestions service kiểm tra số nhà hàng đã sync trong bbox quanh user. Đủ ngưỡng → bỏ qua Overpass.
   \item Nếu thiếu, gọi Overpass một lần (bán kính 7 km, filter amenity), parse cuisine/name để gán \texttt{dishTypes}, bulk insert qua \texttt{createMany skipDuplicates}.
   \item Đọc DB cuối cùng: filter bbox + Haversine, sort theo distance, slice top N, shuffle nếu là chế độ mixed.
-\end{enumerate>
+\end{enumerate}
 
 \section{7. Thiết kế dịch vụ web (Web Service Design)}
 
@@ -382,11 +395,11 @@ Backend cung cấp \textbf{REST API} với prefix versioning \texttt{/api/v1}. B
 \textbf{Endpoint} & \textbf{Method} & \textbf{Mô tả ngắn} \\
 \midrule
 \texttt{/auth/register} & POST & Public. Đăng ký user mới, trả về tokens. \\
-\texttt{/auth/login} & POST & Public. Đăng nhập bằng email/username + password. \\
+\texttt{/auth/login} & POST & Public. Đăng nhập bằng email + password. \\
 \texttt{/auth/refresh} & POST & Public. Cấp lại access token từ refresh token. \\
 \texttt{/auth/logout} & POST & Thu hồi refresh token hiện tại. \\
 \texttt{/auth/me} & GET & Trả thông tin user đang đăng nhập. \\
-\texttt{/dishes} & GET & Public. Trả danh sách 16 món Việt + image/description. \\
+\texttt{/dishes} & GET & Trả danh sách 16 món Việt + image/description. \\
 \texttt{/filters} & GET/PUT & Đọc/cập nhật bộ filter của user. \\
 \texttt{/interactions/like} & POST & Lưu LIKE\_DISH cho user. \\
 \texttt{/interactions/save} & POST & Lưu SAVE\_RESTAURANT khi swipe right. \\
@@ -423,20 +436,20 @@ Luồng logout: client gửi refresh token hiện tại tới \texttt{/auth/logo
     \end{itemize}
   Trường \texttt{details} (mảng lỗi validation cụ thể) chỉ kèm vào response khi \texttt{NODE\_ENV != "production"} để hỗ trợ developer debug; production luôn giữ message ngắn gọn.
   \item \textbf{Client error format}: mobile client trong \texttt{api.ts} có hàm \texttt{extractErrorMessage} parse JSON response và lấy chỉ \texttt{.message} (fallback "Request failed with status N" nếu body không hợp lệ), tránh hiển thị JSON dump lên UI.
-  \item \textbf{CORS}: bật \texttt{credentials} để hỗ trợ cookie/credentials cross-origin từ FE đã được trust.
+  \item \textbf{CORS}: bật \texttt{credentials} (hữu ích khi debug bằng Swagger hoặc web tham chiếu; app native chủ yếu dùng Bearer header).
   \item \textbf{Secrets qua biến môi trường}: \texttt{DATABASE\_URL}, \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET}, \texttt{JWT\_ACCESS\_EXPIRES\_IN}, \texttt{JWT\_REFRESH\_EXPIRES\_IN} chỉ inject ở runtime, không commit vào repo.
-  \item \textbf{Password storage}: hash bằng \texttt{bcryptjs} (cost 12) trong \texttt{AuthService}.
+  \item \textbf{Password storage}: hash bằng \texttt{bcrypt} (cost 10) trong \texttt{AuthService}.
 \end{itemize}
 
 \subsection{7.4 Tài liệu hoá API (API documentation)}
 
-Backend tích hợp Swagger/OpenAPI qua \texttt{@nestjs/swagger} và \texttt{swagger-ui-express}. Tài liệu khởi tạo trong \texttt{main.ts} bằng \texttt{DocumentBuilder} với metadata (title, version, description) và \texttt{Bearer Auth} scheme. UI publish tại \texttt{/api/docs}.
+Backend tích hợp Swagger/OpenAPI (\texttt{@nestjs/swagger}, \texttt{swagger-ui-express}) trong \texttt{main.ts}: \texttt{DocumentBuilder}, scheme \texttt{Bearer Auth}, UI tại \texttt{/api/docs} trên cùng host Render với API.
 
 Nhờ Swagger, nhóm có thể:
 \begin{itemize}
-  \item Kiểm thử nhanh endpoint trong browser (paste access token vào ô Authorize).
-  \item Đồng bộ contract giữa backend ↔ mobile mà không cần Postman riêng.
-  \item Trong tương lai có thể export OpenAPI spec cho mock server hoặc generate typed client tự động.
+  \item QA/dev kiểm thử endpoint và JWT trước khi build app.
+  \item Đồng bộ request/response với \texttt{api.ts} trên mobile (auth, suggestions, interactions).
+  \item Có thể export OpenAPI để sinh client typed hoặc mock server cho integration test.
 \end{itemize}
 
 Hướng nâng cấp tiếp:
@@ -457,7 +470,6 @@ Chiến lược triển khai chia hệ thống thành các phần đặt ở nh�
   \item \textbf{Mobile distribution}: build và phân phối qua EAS (Expo Application Services).
 \end{itemize}
 
-Lưu ý: không tích hợp dịch vụ trả phí nào khác (không Google Maps API, không Foursquare). Toàn bộ dữ liệu nhà hàng đến từ Overpass API (OpenStreetMap), miễn phí và chỉ cần header \texttt{User-Agent}.
 
 \subsection{8.2 Tech stack triển khai}
 
@@ -502,15 +514,20 @@ Dockerfile của backend chạy \texttt{prisma migrate deploy} ở entrypoint tr
   \item Backup: tận dụng tính năng PITR sẵn có của Aiven; không cần thao tác thêm trên ứng dụng.
 \end{itemize}
 
-\subsection{8.5 Triển khai frontend trên Vercel}
+\subsection{8.5 Phát hành ứng dụng di động qua Expo EAS}
 
-Frontend web (tham chiếu) deploy lên Vercel:
-\begin{itemize}
-  \item Import repo, đặt Root Directory tại \texttt{frontend}.
-  \item Build command \texttt{pnpm build}; Output Directory theo mặc định Vite (\texttt{dist}).
-  \item Biến môi trường: URL backend đã deploy trên Render (vd \texttt{VITE\_API\_BASE\_URL}).
-  \item Vercel tự xử lý preview deployment theo branch.
-\end{itemize}
+Đây là bước ``deploy'' của \textbf{frontend mobile} trong nghĩa sản phẩm di động --- thực chất là \textbf{build và phân phối binary}, không phải host static site.
+
+\begin{enumerate}
+  \item Cài \texttt{eas-cli}, đăng nhập: \texttt{npx eas-cli login}.
+  \item Dùng \texttt{apps/mobile/eas.json} đã cấu hình sẵn profile \texttt{preview}/\texttt{production} cho Android APK.
+  \item Profile \texttt{preview} hoặc \texttt{production}: build Android APK (\texttt{buildType: apk} nếu cần file cài trực tiếp).
+  \item Set secret/env trên EAS: \texttt{EXPO\_PUBLIC\_API\_BASE\_URL=https://<ten-service>.onrender.com} (không dùng \texttt{localhost} trong bản nộp bài).
+  \item Chạy \texttt{pnpm deploy:apk} hoặc \texttt{pnpm --filter @tinner/mobile apk:build-preview} --- EAS trả link tải APK sau khi build xong.
+  \item Phân phối nội bộ: chia sẻ link EAS, sideload APK, hoặc đưa lên kênh test (Internal Track) nếu có.
+\end{enumerate}
+
+\textbf{Lưu ý:} BE phải đã deploy Render và DB Aiven trước khi build APK production; nếu không app sẽ không gọi được API.
 
 \subsection{8.6 Phát hành mobile qua EAS}
 
