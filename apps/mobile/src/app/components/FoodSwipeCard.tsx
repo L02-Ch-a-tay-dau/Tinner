@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { motion, useMotionValue, useTransform, animate, PanInfo } from "motion/react";
 import { Heart, X, Flame } from "lucide-react";
-import { Food } from "../data/foods";
-
 interface FoodSwipeCardProps {
-  food: Food;
+  food: {
+    id: string | number;
+    name: string;
+    cuisine: string;
+    description: string;
+    image: string;
+    calories: string;
+    tags: string[];
+    restaurants: Array<{ id: string | number }>;
+  };
   isTop: boolean;
   stackIndex: number;
   onSwipeLeft: () => void;

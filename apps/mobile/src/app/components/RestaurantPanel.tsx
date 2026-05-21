@@ -1,9 +1,29 @@
 import { motion, AnimatePresence } from "motion/react";
 import { X, MapPin, Star, Navigation, ExternalLink, ChevronRight } from "lucide-react";
-import { Food, Restaurant } from "../data/foods";
 
 interface RestaurantPanelProps {
-  food: Food | null;
+  food: {
+    id: string | number;
+    name: string;
+    cuisine: string;
+    description: string;
+    image: string;
+    calories: string;
+    tags: string[];
+    restaurants: Array<{
+      id: string | number;
+      name: string;
+      address: string;
+      distance: string;
+      distanceNum: number;
+      rating: number;
+      reviews: number;
+      price: string;
+      isOpen: boolean;
+      image: string;
+      mapUrl: string;
+    }>;
+  } | null;
   onClose: () => void;
 }
 

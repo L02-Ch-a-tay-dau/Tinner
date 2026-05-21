@@ -1,5 +1,3 @@
-export const GUEST_USER_EMAIL = "guest@tinner.app";
-
 export type ScreenName = "login" | "signup" | "swipe" | "map" | "collections" | "filters";
 
 export interface NativeRestaurant {
@@ -46,8 +44,8 @@ export interface LikedFood {
 
 export interface UserPreferences {
   cuisines: string[];
-  dietaryRestrictions: string[];
-  priceRange: string[];
+  priceVndMin: number;
+  priceVndMax: number;
   maxDistance: number;
   minRating: number;
 }
@@ -57,10 +55,57 @@ export interface UserProfile {
   name: string;
 }
 
+export const CUISINE_OPTIONS = [
+  "Quán vỉa hè",
+  "Cơm & Mì",
+  "Hải sản",
+  "Lẩu & Nướng",
+  "Đồ ăn Nhật Bản",
+  "Đồ ăn Hàn Quốc",
+  "Đồ ăn Trung Hoa",
+  "Đồ ăn Âu",
+  "Cafe",
+  "Trà sữa",
+  "Bánh mì",
+  "Gà rán",
+  "Pizza",
+  "Phở",
+  "Bún",
+  "Bánh xèo",
+  "Bánh cuốn",
+  "Bánh canh",
+  "Bánh bèo",
+  "Chay",
+  "Khác",
+];
+
+export const PRICE_BRACKETS = [
+  { level: "$", min: 0, max: 50000 },
+  { level: "$$", min: 50000, max: 150000 },
+  { level: "$$$", min: 150000, max: 500000 },
+  { level: "$$$$", min: 500000, max: Infinity },
+] as const;
+
+export function vndToPriceLevels(vndMin: number, vndMax: number): string[] {
+  return PRICE_BRACKETS
+    .filter((b) => b.min < vndMax && b.max > vndMin)
+    .map((b) => b.level);
+}
+
+export function priceLevelsToVnd(levels: string[]): { vndMin: number; vndMax: number } {
+  if (levels.length === 0) return { vndMin: 0, vndMax: 0 };
+  if (levels.length >= 4) return { vndMin: 0, vndMax: 1000000 };
+  const brackets = PRICE_BRACKETS.filter((b) => levels.includes(b.level));
+  return {
+    vndMin: Math.min(...brackets.map((b) => b.min)),
+    vndMax: Math.max(...brackets.map((b) => (b.max === Infinity ? 1000000 : b.max))),
+  };
+}
+
 export const defaultPreferences: UserPreferences = {
   cuisines: [],
-  dietaryRestrictions: [],
-  priceRange: ["$", "$$", "$$$", "$$$$"],
+  priceVndMin: 0,
+  priceVndMax: 1000000,
   maxDistance: 5,
   minRating: 0,
 };

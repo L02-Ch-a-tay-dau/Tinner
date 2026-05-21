@@ -3,7 +3,14 @@ import { Alert, StyleSheet, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabs } from "./components/BottomTabs";
-import { getSuggestionsFromApi, loginWithApi, saveRestaurantToApi, signupWithApi } from "./api";
+import {
+  getSuggestionsFromApi,
+  loadFiltersFromApi,
+  loginWithApi,
+  saveFiltersToApi,
+  saveRestaurantToApi,
+  signupWithApi,
+} from "./api";
 import { getDesignFoods } from "./designData";
 import { CollectionsScreen } from "./screens/CollectionsScreen";
 import { FiltersScreen } from "./screens/FiltersScreen";
@@ -14,7 +21,6 @@ import { SwipeScreen } from "./screens/SwipeScreen";
 import { colors } from "./theme";
 import {
   defaultPreferences,
-  GUEST_USER_EMAIL,
   type LikedFood,
   type NativeFood,
   type ScreenName,
@@ -46,6 +52,7 @@ export function AppShell() {
   const [likedCount, setLikedCount] = useState(0);
   const [skippedCount, setSkippedCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const loadApiDeck = useCallback(async (authToken?: string) => {
@@ -73,6 +80,25 @@ export function AppShell() {
 
   const mapFoods = useMemo(() => (token ? deck : []), [deck, token]);
 
+  const signup = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await signupWithApi({
+        username: signupUsername,
+        email,
+        password,
+        confirmPassword: signupConfirmPassword,
+        fullName: signupFullName,
+      });
+      setScreen("login");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Signup failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const login = async () => {
     setLoading(true);
     setError("");
@@ -82,70 +108,12 @@ export function AppShell() {
       setUser(response.profile);
       setLikedCount(0);
       setSkippedCount(0);
+      const saved = await loadFiltersFromApi(response.token);
+      setPreferences(saved);
       setScreen("swipe");
       await loadApiDeck(response.token);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid email or password");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const guestLogin = () => {
-    setToken("");
-    setUser({ email: GUEST_USER_EMAIL, name: "Guest" });
-    setError("");
-    setLikedCount(0);
-    setSkippedCount(0);
-    setDeck([]);
-    setScreen("swipe");
-  };
-
-  const signup = async () => {
-    const trimmedUsername = signupUsername.trim();
-    const trimmedEmail = email.trim();
-    const trimmedFullName = signupFullName.trim();
-
-    if (!trimmedUsername || !trimmedEmail || !password || !signupConfirmPassword) {
-      setError("Please fill in all required fields.");
-      return;
-    }
-    if (!/^[a-zA-Z0-9_]+$/.test(trimmedUsername) || trimmedUsername.length < 3 || trimmedUsername.length > 50) {
-      setError("Username must be 3-50 chars and contain only letters, numbers, or underscores.");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (password.length < 8 || password.length > 128 || !/^(?=.*[A-Za-z])(?=.*\d).+$/.test(password)) {
-      setError("Password must be 8-128 chars and include at least one letter and one number.");
-      return;
-    }
-    if (password !== signupConfirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    try {
-      await signupWithApi({
-        username: trimmedUsername,
-        email: trimmedEmail,
-        password,
-        confirmPassword: signupConfirmPassword,
-        fullName: trimmedFullName || undefined,
-      });
-      setSignupUsername("");
-      setSignupFullName("");
-      setSignupConfirmPassword("");
-      setPassword("");
-      setEmail(trimmedEmail);
-      setScreen("login");
-      Alert.alert("Account created", "Please log in with your new account.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create account");
     } finally {
       setLoading(false);
     }
@@ -215,12 +183,19 @@ export function AppShell() {
     setLikedFood(null);
   };
 
-  const savePreferences = () => {
+  const savePreferences = async () => {
+    setSaving(true);
     if (token) {
-      void loadApiDeck();
+      try {
+        await saveFiltersToApi(token, preferences);
+      } catch {
+        // Filters save failed silently — deck reload will use previous filters
+      }
+      await loadApiDeck();
     } else {
       setDeck([]);
     }
+    setSaving(false);
     setScreen("swipe");
   };
 
@@ -258,7 +233,6 @@ export function AppShell() {
           onEmailChange={setEmail}
           onPasswordChange={setPassword}
           onLogin={() => void login()}
-          onGuestLogin={guestLogin}
           onGoToSignup={() => {
             setError("");
             setScreen("signup");
@@ -344,6 +318,7 @@ export function AppShell() {
           <FiltersScreen
             user={user}
             preferences={preferences}
+            saving={saving}
             onChangePreferences={setPreferences}
             onReset={() => setPreferences(defaultPreferences)}
             onSave={savePreferences}

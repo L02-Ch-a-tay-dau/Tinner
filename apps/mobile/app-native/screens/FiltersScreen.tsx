@@ -1,30 +1,16 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, sharedStyles, shadow, spacing } from "../theme";
-import { defaultPreferences, type UserPreferences, type UserProfile } from "../types";
+import { CUISINE_OPTIONS, defaultPreferences, type UserPreferences, type UserProfile } from "../types";
 
 interface FiltersScreenProps {
   user: UserProfile | null;
   preferences: UserPreferences;
+  saving?: boolean;
   onChangePreferences: (preferences: UserPreferences) => void;
   onReset: () => void;
   onSave: () => void;
 }
-
-const cuisineOptions = [
-  "American",
-  "Japanese",
-  "Italian",
-  "Thai",
-  "Mexican",
-  "Indian",
-  "Steakhouse",
-  "Chinese",
-  "French",
-  "Mediterranean",
-];
-const dietaryOptions = ["Vegetarian", "Vegan", "Gluten-Free", "Halal", "Kosher", "Dairy-Free", "Nut-Free"];
-const priceOptions = ["$", "$$", "$$$", "$$$$"];
 
 function toggle(list: string[], value: string) {
   return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
@@ -35,13 +21,13 @@ interface PillGroupProps {
   subtitle: string;
   items: string[];
   selected: string[];
-  color: "orange" | "green" | "blue";
+  color: "orange" | "green";
   onToggle: (item: string) => void;
 }
 
 function PillGroup({ title, subtitle, items, selected, color, onToggle }: PillGroupProps) {
-  const activeColor = color === "orange" ? colors.orange : color === "green" ? colors.green : colors.blue;
-  const activeSoft = color === "orange" ? colors.orangeSoft : color === "green" ? colors.greenSoft : colors.blueSoft;
+  const activeColor = color === "orange" ? colors.orange : colors.green;
+  const activeSoft = color === "orange" ? colors.orangeSoft : colors.greenSoft;
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -71,9 +57,18 @@ function PillGroup({ title, subtitle, items, selected, color, onToggle }: PillGr
   );
 }
 
+function formatVnd(value: number): string {
+  return value.toLocaleString("vi-VN");
+}
+
+function parseVnd(text: string): number {
+  return Number(text.replaceAll(/[^0-9]/g, "")) || 0;
+}
+
 export function FiltersScreen({
   user,
   preferences,
+  saving,
   onChangePreferences,
   onReset,
   onSave,
@@ -83,6 +78,11 @@ export function FiltersScreen({
     onChangePreferences(defaultPreferences);
     onReset();
   };
+
+  const priceSubtitle =
+    preferences.priceVndMin <= 0 && preferences.priceVndMax >= 1000000
+      ? "Tất cả mức giá"
+      : `${formatVnd(preferences.priceVndMin)}đ – ${formatVnd(preferences.priceVndMax)}đ`;
 
   return (
     <View
@@ -124,42 +124,45 @@ export function FiltersScreen({
         </View>
 
         <PillGroup
-          title="Cuisines"
-          subtitle={preferences.cuisines.length === 0 ? "All cuisines included" : `${preferences.cuisines.length} selected`}
-          items={cuisineOptions}
+          title="Loại quán"
+          subtitle={preferences.cuisines.length === 0 ? "Tất cả" : `${preferences.cuisines.length} loại`}
+          items={CUISINE_OPTIONS}
           selected={preferences.cuisines}
           color="orange"
           onToggle={(cuisine) =>
             onChangePreferences({ ...preferences, cuisines: toggle(preferences.cuisines, cuisine) })
           }
         />
-        <PillGroup
-          title="Dietary Preferences"
-          subtitle={
-            preferences.dietaryRestrictions.length === 0
-              ? "No restrictions"
-              : `${preferences.dietaryRestrictions.length} selected`
-          }
-          items={dietaryOptions}
-          selected={preferences.dietaryRestrictions}
-          color="green"
-          onToggle={(dietary) =>
-            onChangePreferences({
-              ...preferences,
-              dietaryRestrictions: toggle(preferences.dietaryRestrictions, dietary),
-            })
-          }
-        />
-        <PillGroup
-          title="Price Range"
-          subtitle={preferences.priceRange.length === 4 ? "All prices" : preferences.priceRange.join(", ")}
-          items={priceOptions}
-          selected={preferences.priceRange}
-          color="blue"
-          onToggle={(price) =>
-            onChangePreferences({ ...preferences, priceRange: toggle(preferences.priceRange, price) })
-          }
-        />
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Khoảng giá</Text>
+          <Text style={styles.sectionSub}>{priceSubtitle}</Text>
+          <View style={styles.vndRow}>
+            <TextInput
+              style={styles.vndInput}
+              keyboardType="numeric"
+              placeholder="0"
+              placeholderTextColor="#bbb"
+              value={preferences.priceVndMin > 0 ? String(preferences.priceVndMin) : ""}
+              onChangeText={(text) =>
+                onChangePreferences({ ...preferences, priceVndMin: parseVnd(text) })
+              }
+            />
+            <Text style={styles.vndLabel}>₫</Text>
+            <Text style={styles.vndDash}>–</Text>
+            <TextInput
+              style={styles.vndInput}
+              keyboardType="numeric"
+              placeholder="1.000.000"
+              placeholderTextColor="#bbb"
+              value={preferences.priceVndMax < 1000000 ? String(preferences.priceVndMax) : ""}
+              onChangeText={(text) =>
+                onChangePreferences({ ...preferences, priceVndMax: parseVnd(text) })
+              }
+            />
+            <Text style={styles.vndLabel}>₫</Text>
+          </View>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Maximum Distance</Text>
@@ -183,34 +186,12 @@ export function FiltersScreen({
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Minimum Rating</Text>
-          <Text style={styles.sectionSub}>Only show highly rated places</Text>
-          <View style={styles.stepperRow}>
-            <Pressable
-              style={styles.stepperButton}
-              onPress={() =>
-                onChangePreferences({ ...preferences, minRating: Math.max(0, Number((preferences.minRating - 0.5).toFixed(1))) })
-              }
-            >
-              <Text style={styles.stepperText}>−</Text>
-            </Pressable>
-            <View style={styles.valueBox}>
-              <Text style={styles.valueText}>★ {preferences.minRating.toFixed(1)}</Text>
-            </View>
-            <Pressable
-              style={styles.stepperButton}
-              onPress={() =>
-                onChangePreferences({ ...preferences, minRating: Math.min(5, Number((preferences.minRating + 0.5).toFixed(1))) })
-              }
-            >
-              <Text style={styles.stepperText}>+</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <Pressable style={styles.saveButton} onPress={onSave}>
-          <Text style={styles.saveText}>Save Preferences</Text>
+        <Pressable style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={onSave} disabled={saving}>
+          {saving ? (
+            <ActivityIndicator color={colors.white} size="small" />
+          ) : (
+            <Text style={styles.saveText}>Save Preferences</Text>
+          )}
         </Pressable>
       </ScrollView>
     </View>
@@ -313,6 +294,33 @@ const styles = StyleSheet.create({
   pillTextActive: {
     color: colors.white,
   },
+  vndRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  vndInput: {
+    flex: 1,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: colors.text,
+    fontWeight: "700",
+  },
+  vndLabel: {
+    color: colors.muted,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  vndDash: {
+    color: colors.muted,
+    fontSize: 16,
+    fontWeight: "800",
+  },
   stepperRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -348,6 +356,9 @@ const styles = StyleSheet.create({
     borderRadius: spacing.radiusXl,
     paddingVertical: 16,
     alignItems: "center",
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
   },
   saveText: {
     color: colors.white,

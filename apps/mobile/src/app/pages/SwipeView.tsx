@@ -1,61 +1,49 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Heart, X, RotateCcw, Utensils, Sparkles, LogOut, User } from "lucide-react";
-import { foods } from "../data/foods";
+import { Heart, X, RotateCcw, Utensils, Sparkles, LogOut, User, Loader2 } from "lucide-react";
 import { FoodSwipeCard } from "../components/FoodSwipeCard";
 import { RestaurantPanel } from "../components/RestaurantPanel";
 import { authService } from "../utils/auth";
-import { preferencesService } from "../utils/preferences";
+import { type SuggestionCard, fetchSuggestions, saveRestaurantApi } from "../utils/api";
+import { setDeck as storeDeck } from "../utils/store";
 import { useNavigate } from "react-router";
-import type { Food } from "../data/foods";
 
 export default function SwipeView() {
   const navigate = useNavigate();
   const user = authService.getCurrentUser();
-  const preferences = preferencesService.getPreferences();
 
-  // Filter foods based on user preferences
-  const getFilteredFoods = () => {
-    let filtered = [...foods];
-
-    if (preferences.cuisines.length > 0) {
-      filtered = filtered.filter((food) =>
-        preferences.cuisines.includes(food.cuisine)
-      );
-    }
-
-    // Filter by dietary restrictions (tags)
-    if (preferences.dietaryRestrictions.length > 0) {
-      filtered = filtered.filter((food) =>
-        preferences.dietaryRestrictions.some((restriction) =>
-          food.tags.some((tag) => tag.toLowerCase().includes(restriction.toLowerCase()))
-        )
-      );
-    }
-
-    // Filter restaurants by price and rating
-    filtered = filtered.map((food) => ({
-      ...food,
-      restaurants: food.restaurants.filter(
-        (r) =>
-          preferences.priceRange.includes(r.price) &&
-          r.rating >= preferences.minRating &&
-          r.distanceNum <= preferences.maxDistance
-      ),
-    }));
-
-    // Only include foods that have at least one matching restaurant
-    filtered = filtered.filter((food) => food.restaurants.length > 0);
-
-    return filtered;
-  };
-
-  const [deck, setDeck] = useState<Food[]>(getFilteredFoods());
-  const [likedFood, setLikedFood] = useState<Food | null>(null);
+  const [deck, setDeck] = useState<SuggestionCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [likedFood, setLikedFood] = useState<SuggestionCard | null>(null);
   const [skippedCount, setSkippedCount] = useState(0);
   const [likedCount, setLikedCount] = useState(0);
   const [lastAction, setLastAction] = useState<"like" | "skip" | null>(null);
   const [showActionFeedback, setShowActionFeedback] = useState(false);
+  const [tip, setTip] = useState("");
+
+  const loadDeck = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const cards = await fetchSuggestions();
+      setDeck([...cards].reverse());
+      storeDeck(cards);
+    } catch (err) {
+      setDeck([]);
+      setError(err instanceof Error ? err.message : "Unable to load suggestions");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    void loadDeck();
+  }, [loadDeck, navigate]);
 
   const triggerFeedback = (action: "like" | "skip") => {
     setLastAction(action);
@@ -70,14 +58,10 @@ export default function SwipeView() {
     setLikedCount((c) => c + 1);
     triggerFeedback("like");
 
-    // Save to liked foods
-    preferencesService.addLikedFood({
-      foodId: current.id,
-      foodName: current.name,
-      cuisine: current.cuisine,
-      likedAt: new Date().toISOString(),
-      image: current.image,
-    });
+    if (current.restaurants[0]) {
+      saveRestaurantApi(current.restaurants[0].id, current.dishType)
+        .catch(() => { /* silent */ });
+    }
 
     setDeck((prev) => prev.slice(0, -1));
   }, [deck]);
@@ -90,7 +74,7 @@ export default function SwipeView() {
   }, [deck]);
 
   const handleReset = () => {
-    setDeck(getFilteredFoods());
+    void loadDeck();
     setSkippedCount(0);
     setLikedCount(0);
     setLastAction(null);
@@ -116,7 +100,9 @@ export default function SwipeView() {
             </div>
             <h1 className="text-gray-900 text-xl">Tinner</h1>
           </div>
-          <p className="text-gray-400 text-xs mt-0.5 ml-10">Find your next craving</p>
+          <p className="text-gray-400 text-xs mt-0.5 ml-10">
+            {loading ? "Loading nearby places..." : "Find your next craving"}
+          </p>
         </div>
 
         {/* Stats & User */}
@@ -153,70 +139,92 @@ export default function SwipeView() {
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm mb-3">
+          {error}
+        </div>
+      )}
+
       {/* Card Stack Area */}
       <div className="flex-1 flex flex-col items-center justify-center">
         {/* Card Container */}
         <div className="relative w-full" style={{ height: 520 }}>
-          <AnimatePresence>
-            {deck.length === 0 ? (
-              /* Empty state */
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm"
-              >
-                <div className="text-6xl mb-4">🍽️</div>
-                <h3 className="text-gray-700 text-xl mb-1">You've seen it all!</h3>
-                <p className="text-gray-400 text-sm text-center px-6 mb-6">
-                  You liked {likedCount} dish{likedCount !== 1 ? "es" : ""}. Ready for another round?
-                </p>
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl transition-colors"
+          {loading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm">
+              <Loader2 className="w-10 h-10 text-orange-500 animate-spin mb-4" />
+              <p className="text-gray-500 text-sm">Loading nearby places...</p>
+            </div>
+          ) : (
+            <AnimatePresence>
+              {deck.length === 0 ? (
+                /* Empty state */
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-100 shadow-sm"
                 >
-                  <RotateCcw className="w-4 h-4" />
-                  Start Over
-                </button>
-              </motion.div>
-            ) : (
-              <>
-                {/* Back card (3rd) */}
-                {thirdFood && (
-                  <FoodSwipeCard
-                    key={`third-${thirdFood.id}`}
-                    food={thirdFood}
-                    isTop={false}
-                    stackIndex={2}
-                    onSwipeLeft={() => {}}
-                    onSwipeRight={() => {}}
-                  />
-                )}
-                {/* Middle card (2nd) */}
-                {secondFood && (
-                  <FoodSwipeCard
-                    key={`second-${secondFood.id}`}
-                    food={secondFood}
-                    isTop={false}
-                    stackIndex={1}
-                    onSwipeLeft={() => {}}
-                    onSwipeRight={() => {}}
-                  />
-                )}
-                {/* Top card */}
-                {topFood && (
-                  <FoodSwipeCard
-                    key={`top-${topFood.id}`}
-                    food={topFood}
-                    isTop={true}
-                    stackIndex={0}
-                    onSwipeLeft={handleSwipeLeft}
-                    onSwipeRight={handleSwipeRight}
-                  />
-                )}
-              </>
-            )}
-          </AnimatePresence>
+                  <div className="text-6xl mb-4">{likedCount > 0 ? "🍽️" : "📍"}</div>
+                  {likedCount === 0 && skippedCount === 0 ? (
+                    <>
+                      <h3 className="text-gray-700 text-xl mb-1">No nearby places</h3>
+                      <p className="text-gray-400 text-sm text-center px-6 mb-6">
+                        The API returned no restaurants in range. Try opening Filters to relax distance or rating.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-gray-700 text-xl mb-1">You've seen it all!</h3>
+                      <p className="text-gray-400 text-sm text-center px-6 mb-6">
+                        You liked {likedCount} place{likedCount !== 1 ? "s" : ""}. Ready for another round?
+                      </p>
+                    </>
+                  )}
+                  <button
+                    onClick={handleReset}
+                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-2xl transition-colors"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    {likedCount > 0 ? "Start Over" : "Retry"}
+                  </button>
+                </motion.div>
+              ) : (
+                <>
+                  {thirdFood && (
+                    <FoodSwipeCard
+                      key={`third-${thirdFood.id}`}
+                      food={thirdFood}
+                      isTop={false}
+                      stackIndex={2}
+                      onSwipeLeft={() => {}}
+                      onSwipeRight={() => {}}
+                    />
+                  )}
+                  {secondFood && (
+                    <FoodSwipeCard
+                      key={`second-${secondFood.id}`}
+                      food={secondFood}
+                      isTop={false}
+                      stackIndex={1}
+                      onSwipeLeft={() => {}}
+                      onSwipeRight={() => {}}
+                    />
+                  )}
+                  {topFood && (
+                    <FoodSwipeCard
+                      key={`top-${topFood.id}`}
+                      food={topFood}
+                      isTop={true}
+                      stackIndex={0}
+                      onSwipeLeft={handleSwipeLeft}
+                      onSwipeRight={handleSwipeRight}
+                    />
+                  )}
+                </>
+              )}
+            </AnimatePresence>
+          )}
 
           {/* Action feedback burst */}
           <AnimatePresence>
@@ -240,19 +248,18 @@ export default function SwipeView() {
         </div>
 
         {/* Remaining count */}
-        {deck.length > 0 && (
+        {deck.length > 0 && !loading && (
           <div className="flex items-center gap-1.5 mt-4 mb-2">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span className="text-gray-500 text-sm">
-              {deck.length} dish{deck.length !== 1 ? "es" : ""} remaining
+              {deck.length} place{deck.length !== 1 ? "s" : ""} remaining
             </span>
           </div>
         )}
 
         {/* Action Buttons */}
-        {deck.length > 0 && (
+        {deck.length > 0 && !loading && (
           <div className="flex items-center justify-center gap-8 mt-2 mb-8">
-            {/* Skip button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.05 }}
@@ -262,7 +269,6 @@ export default function SwipeView() {
               <X className="w-7 h-7 text-red-400 group-hover:text-red-500 transition-colors" />
             </motion.button>
 
-            {/* Reset button (smaller, center) */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.05 }}
@@ -273,7 +279,6 @@ export default function SwipeView() {
               <RotateCcw className="w-4 h-4 text-gray-400 group-hover:text-amber-500 transition-colors" />
             </motion.button>
 
-            {/* Like button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               whileHover={{ scale: 1.05 }}

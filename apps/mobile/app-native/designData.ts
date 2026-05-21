@@ -1,5 +1,6 @@
 import { foods as sourceFoods } from "../src/app/data/foods";
 import type { NativeFood, NativeRestaurant, UserPreferences } from "./types";
+import { vndToPriceLevels } from "./types";
 
 function toNativeRestaurant(restaurant: (typeof sourceFoods)[number]["restaurants"][number]): NativeRestaurant {
   return {
@@ -32,19 +33,14 @@ export function getDesignFoods(): NativeFood[] {
 }
 
 export function filterFoodsByPreferences(foods: NativeFood[], preferences: UserPreferences) {
+  const selectedLevels = vndToPriceLevels(preferences.priceVndMin, preferences.priceVndMax);
   return foods
     .filter((food) => preferences.cuisines.length === 0 || preferences.cuisines.includes(food.cuisine))
-    .filter((food) => {
-      if (preferences.dietaryRestrictions.length === 0) return true;
-      return preferences.dietaryRestrictions.some((restriction) =>
-        food.tags.some((tag) => tag.toLowerCase().includes(restriction.toLowerCase())),
-      );
-    })
     .map((food) => ({
       ...food,
       restaurants: food.restaurants.filter(
         (restaurant) =>
-          preferences.priceRange.includes(restaurant.price) &&
+          selectedLevels.includes(restaurant.price) &&
           restaurant.rating >= preferences.minRating &&
           restaurant.distanceNum <= preferences.maxDistance,
       ),

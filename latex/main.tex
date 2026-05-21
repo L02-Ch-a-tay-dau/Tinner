@@ -212,155 +212,156 @@
 
 \subsection{4.1 Tổ chức mã nguồn (monorepo)}
 
-Dự án tổ chức theo mô hình monorepo, sử dụng \texttt{pnpm} làm trình quản lý gói/workspace, yêu cầu Node.js 22+. Các thành phần theo vai trò trong sản phẩm mobile:
+Dự án dùng monorepo \texttt{pnpm} (Node.js 22+, pnpm 10+) với các thành phần chính:
 
 \begin{itemize}
-  \item \texttt{apps/mobile} (\textbf{client chính}): Expo SDK 54 + React Native. Mã UI/flow nằm trong \texttt{app-native} (\texttt{AppShell.tsx}, các screen Login/Signup/Swipe/Map/Collections/Filters).
-  \item \texttt{apps/backend} (\textbf{server}): NestJS 11 + Prisma 7, expose REST API cho app gọi qua HTTPS.
-  \item \texttt{packages/types}: DTO/enum dùng chung giữa backend và client.
-  \item \texttt{frontend} (\textbf{tuỳ chọn}): Vite + React, chỉ là giao diện tham chiếu từ Figma; không nằm trên luồng phát hành APK của đề tài.
+  \item \texttt{apps/backend}: NestJS 11 + Prisma 7 + PostgreSQL, cung cấp REST API \texttt{/api/v1/*}.
+  \item \texttt{apps/mobile}: Expo SDK 54 + React Native (ứng dụng phát hành chính), đồng thời có mã web tham chiếu trong \texttt{src/}.
+  \item \texttt{packages/types}: kiểu dữ liệu dùng chung trong workspace.
+  \item \texttt{packages/api-client}: package API client typed phục vụ chia sẻ logic gọi API trong monorepo.
 \end{itemize}
 
-\subsection{4.2 Backend triển khai tại \texttt{apps/backend}}
+\subsection{4.2 Backend tại \texttt{apps/backend}}
 
-Backend dùng TypeScript với framework NestJS 11. Truy cập dữ liệu qua Prisma 7 kết nối PostgreSQL (Aiven trên production, Docker Postgres trên local).
+Backend viết bằng TypeScript với NestJS 11, kết nối PostgreSQL qua Prisma adapter \texttt{@prisma/adapter-pg}.
 
-\subsubsection{Luồng khởi động và middleware chung}
+\subsubsection{Khởi động ứng dụng và middleware toàn cục}
 
-Trong \texttt{main.ts}, ứng dụng bật CORS với \texttt{credentials}, dùng \texttt{cookie-parser}, đăng ký:
+Trong \texttt{main.ts}, hệ thống:
 \begin{itemize}
-  \item Một global filter \texttt{GlobalExceptionFilter} (\texttt{@Catch()}) bắt mọi exception — phân biệt \texttt{HttpException} (trả status/message đã chuẩn hoá) và các lỗi không lường trước (log full server-side, trả \texttt{500 Internal server error}). Ở môi trường non-production, response thêm trường \texttt{details} chứa danh sách lỗi validation; ở production thì giữ \texttt{message} chung để không lộ chi tiết.
-  \item Một global \texttt{ValidationPipe} với \texttt{transform}, \texttt{whitelist}, \texttt{forbidNonWhitelisted}.
-  \item Swagger UI tại \texttt{/api/docs} (xem mục 7.4).
+  \item bật CORS (\texttt{origin: true}, \texttt{credentials: true});
+  \item dùng \texttt{cookie-parser};
+  \item đăng ký \texttt{GlobalExceptionFilter} để chuẩn hoá payload lỗi (ẩn chi tiết ở production, chỉ trả \texttt{details} validation ở non-production);
+  \item đăng ký \texttt{ValidationPipe} với \texttt{transform}, \texttt{whitelist}, \texttt{forbidNonWhitelisted};
+  \item publish Swagger UI tại \texttt{/api/docs}.
 \end{itemize}
 
-\subsubsection{Xác thực và phân quyền}
+\subsubsection{Xác thực và quản trị phiên}
 
-Hệ thống dùng JWT (\texttt{@nestjs/jwt}, \texttt{passport-jwt}) với 2 token:
+Auth dùng JWT với access/refresh token:
 \begin{itemize}
-  \item \texttt{accessToken} (TTL 15 phút, mặc định) — gửi trong header \texttt{Authorization: Bearer}.
-  \item \texttt{refreshToken} (TTL 30 ngày, mặc định) — lưu hash trong bảng \texttt{refresh\_tokens}, dùng để rotate access token.
+  \item Access token (mặc định 15 phút) dùng cho bearer auth ở các endpoint private.
+  \item Refresh token (mặc định 30 ngày) được lưu dạng hash trong bảng \texttt{refresh\_tokens}; mỗi lần refresh sẽ revoke token cũ và phát token mới.
 \end{itemize}
-\texttt{JwtAuthGuard} đăng ký toàn cục qua \texttt{APP\_GUARD} trong \texttt{AppModule}; các endpoint công khai đánh dấu bằng decorator \texttt{@Public()} (ví dụ \texttt{/auth/register}, \texttt{/auth/login}, \texttt{/auth/refresh}, \texttt{/health}).
 
-Luồng đăng ký (\texttt{POST /api/v1/auth/register}) yêu cầu \texttt{username} (3--50 ký tự, chữ/số/underscore), \texttt{email}, \texttt{password} (8--128, có chữ và số), \texttt{confirmPassword}, \texttt{fullName} và \texttt{phone} (tuỳ chọn). Sau khi tạo user, hệ thống đồng thời khởi tạo bản ghi \texttt{user\_filters} mặc định để các luồng \emph{suggestions} sẵn sàng dùng ngay.
+\texttt{JwtAuthGuard} được đăng ký global qua \texttt{APP\_GUARD}. Các route public được đánh dấu bằng decorator \texttt{@Public()} (ví dụ: \texttt{/api/v1/auth/register}, \texttt{/api/v1/auth/login}, \texttt{/api/v1/auth/refresh}, \texttt{/api/v1/health}).
 
 \subsubsection{Các module nghiệp vụ}
 
 \begin{itemize}
-  \item \texttt{AuthModule}: register/login/refresh/logout/me.
-  \item \texttt{DishesModule}: trả danh sách món ăn (16 dish enum: phở, bún bò, cơm tấm, bánh mì\ldots).
-  \item \texttt{FiltersModule}: lưu \texttt{maxDistanceKm}, \texttt{minRating}, \texttt{cuisines}, \texttt{dietary}, \texttt{priceRanges} cho từng user.
-  \item \texttt{InteractionsModule}: ghi nhận hành vi swipe-right (\texttt{SAVE\_RESTAURANT}) và like-dish (\texttt{LIKE\_DISH}).
-  \item \texttt{SuggestionsModule}: cốt lõi của trải nghiệm swipe — chi tiết ở 4.2.4.
-  \item \texttt{HealthController}: endpoint kiểm tra trạng thái (xem 4.2.5).
+  \item \texttt{AuthModule}: đăng ký/đăng nhập/refresh/logout/me.
+  \item \texttt{DishesModule}: trả danh sách dish seed trong DB.
+  \item \texttt{FiltersModule}: lưu bộ lọc cá nhân (\texttt{cuisines}, \texttt{dietary}, \texttt{priceRanges}, \texttt{maxDistanceKm}, \texttt{minRating}).
+  \item \texttt{InteractionsModule}: ghi nhận thao tác like/save/saved/delete.
+  \item \texttt{SuggestionsModule}: xử lý luồng gợi ý địa điểm theo vị trí hiện tại.
+  \item \texttt{HealthController}: health check phục vụ giám sát runtime.
 \end{itemize}
 
-\subsubsection{Tầng gợi ý (SuggestionsModule) và tích hợp Overpass}
+\subsubsection{Tầng gợi ý (\texttt{SuggestionsModule})}
 
-\texttt{SuggestionsService} dùng chiến lược \emph{DB-first} kết hợp Overpass API (OpenStreetMap) làm nguồn dữ liệu:
+Code hiện tại triển khai chiến lược \textbf{SerpAPI-first + local database retrieval}:
 
 \begin{enumerate}
-  \item Với mỗi request \texttt{GET /api/v1/suggestions?lat\&lng[\&dishType]}, service đếm số nhà hàng đã đồng bộ gần đây trong bounding box quanh user (cột \texttt{lastSyncedAt} $\le$ 7 ngày). Nếu đạt ngưỡng (mặc định 20 quán) thì dùng luôn dữ liệu DB.
-  \item Khi vùng chưa fresh, gọi 1 query Overpass API trong bán kính 7 km, filter \texttt{amenity in \{restaurant, fast\_food, cafe, food\_court\}}, sau đó bulk insert qua \texttt{prisma.restaurant.createMany(\{ skipDuplicates: true \})}.
-  \item Với mỗi POI, service phân loại \texttt{dishTypes} bằng helper \texttt{detectDishTypesInText} dựa trên tag \texttt{name} + \texttt{cuisine}. POI không có dishType nào (vd nhà hàng generic không nêu món) vẫn được lưu nhưng bị loại khỏi deck swipe (filter \texttt{dishTypes: \{ isEmpty: false \}}).
-  \item Cuối cùng, đọc DB lọc theo bbox + Haversine distance, shuffle ngẫu nhiên cho chế độ mixed (không dishType) hoặc filter chính xác \texttt{dishTypes.has(dishType)} cho chế độ single-dish.
+  \item Nhận request \texttt{GET /api/v1/suggestions} với \texttt{lat}, \texttt{lng}, \texttt{dishType?}.
+  \item Đọc \texttt{user\_filters} của user để lấy \texttt{maxDistanceKm}, \texttt{minRating}, \texttt{cuisines}, \texttt{priceRanges}.
+  \item Nếu có \texttt{SERPAPI\_API\_KEY}, service gọi SerpAPI (engine Google Maps) để lấy dữ liệu gần user; có cooldown chống spam request.
+  \item Kết quả mới được insert hàng loạt bằng \texttt{createMany(..., skipDuplicates: true)} vào bảng \texttt{restaurants}.
+  \item Truy vấn lại DB theo bounding box + khoảng cách Haversine + ngưỡng rating; nếu có \texttt{dishType} thì lọc theo món, nếu không thì trả chế độ mixed và shuffle.
+  \item Cuối pipeline áp dụng thêm bộ lọc cuisine và price range rồi trả deck cho mobile.
 \end{enumerate}
 
-Cách tiếp cận này giảm độ trễ lần đầu cho một vùng từ vài phút (N+1 upsert tuần tự) xuống dưới 10 giây, và các request sau cùng vùng chỉ tốn $\sim$300 ms vì hoàn toàn phục vụ từ DB.
+\textit{Lưu ý cập nhật codebase:} \texttt{overpass.service.ts} vẫn còn trong repo như utility, nhưng hiện chưa được wire vào \texttt{SuggestionsModule}; luồng runtime chính dùng \texttt{SerpapiService}.
 
 \subsubsection{Health check}
 
-\texttt{HealthController} expose \texttt{GET /api/v1/health} (đánh dấu \texttt{@Public()}), trả \texttt{\{ status: "ok" \}}. Render dùng endpoint này cho \texttt{healthCheckPath} trong \texttt{render.yaml}.
+Endpoint \texttt{GET /api/v1/health} trả \texttt{\{ status: "ok" \}} và được khai báo public. Render dùng endpoint này cho \texttt{healthCheckPath}.
 
-\subsection{4.3 Ứng dụng di động triển khai tại \texttt{apps/mobile}}
+\subsection{4.3 Mobile app tại \texttt{apps/mobile}}
 
-Ứng dụng mobile dùng Expo SDK 54 với React 19 và React Native. Đây là \textbf{frontend sản phẩm}: không deploy lên Vercel/Render như SPA, mà được \textbf{build} thành binary Android (APK) và cài trên thiết bị người dùng.
+Ứng dụng mobile dùng Expo + React Native, phát hành dưới dạng APK qua EAS.
 
-\subsubsection{Cấu trúc client}
-
-Mã nằm trong \texttt{apps/mobile/app-native}:
+\subsubsection{Cấu trúc client native}
 
 \begin{itemize}
-  \item \texttt{AppShell.tsx} làm root component, quản lý state phiên đăng nhập, deck swipe và điều hướng giữa các màn hình bằng state machine (\texttt{ScreenName}: \texttt{login | signup | swipe | map | collections | filters}).
-  \item Sáu screen riêng trong \texttt{screens/}: \texttt{LoginScreen}, \texttt{SignupScreen}, \texttt{SwipeScreen}, \texttt{MapScreen}, \texttt{CollectionsScreen}, \texttt{FiltersScreen}.
-  \item Tầng API client (\texttt{api.ts}): wrapper \texttt{fetch} với JWT Bearer header, parse JSON lỗi để chỉ throw trường \texttt{message} (không hiển thị JSON dump ra UI). Hàm \texttt{getSuggestionsFromApi} có thể gọi không kèm \texttt{dishType} để nhận deck mixed.
-  \item Định vị: \texttt{expo-location} lấy toạ độ user; fallback toạ độ trung tâm TP. HCM khi user từ chối quyền.
-  \item Base URL backend cấu hình qua biến môi trường \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+  \item \texttt{App.tsx} bọc \texttt{SafeAreaProvider} và mount \texttt{AppShell}.
+  \item \texttt{app-native/AppShell.tsx} quản lý state phiên và điều hướng màn hình bằng state machine (\texttt{login/signup/swipe/map/collections/filters}).
+  \item \texttt{app-native/api.ts} đóng vai trò gateway gọi backend: login/signup/suggestions/interactions/filters.
+  \item \texttt{expo-location} dùng lấy vị trí hiện tại; nếu từ chối quyền thì fallback toạ độ trung tâm TP.HCM.
+  \item Endpoint backend lấy từ \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
 \end{itemize}
 
-\subsubsection{Metro monorepo}
-
-\texttt{metro.config.js} cấu hình \texttt{watchFolders}, \texttt{nodeModulesPaths}, \texttt{unstable\_enableSymlinks}, \texttt{unstable\_enablePackageExports}; loại \texttt{apps/backend/dist} khỏi watch để tránh xung đột khi dev.
-
-\subsubsection{Phát triển và build APK}
+\subsubsection{Phát triển và build}
 
 \begin{itemize}
-  \item Dev local: \texttt{pnpm dev:mobile} (Expo dev server); API trỏ \texttt{http://10.0.2.2:3000} (Android emulator) hoặc IP LAN (thiết bị thật).
-  \item Build APK: monorepo có script \texttt{deploy:apk} gọi \texttt{pnpm --filter @tinner/mobile apk:build}; \texttt{apps/mobile/eas.json} đã khai báo profile \texttt{preview}/\texttt{production} (Android APK) và biến \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+  \item Chạy local: \texttt{pnpm dev:mobile}.
+  \item Build APK: \texttt{pnpm deploy:apk} (đi tới script \texttt{apk:build} trong \texttt{@tinner/mobile}).
+  \item \texttt{apps/mobile/eas.json} đã có profile \texttt{preview} và \texttt{production} cho Android APK.
 \end{itemize}
 
-\subsection{4.4 Giao diện web tham chiếu (tuỳ chọn)}
+\subsection{4.4 Mã web tham chiếu (tuỳ chọn)}
 
-Thư mục \texttt{frontend} (Vite + React) chỉ phục vụ prototype/tham chiếu thiết kế. \textbf{Không} thay thế \texttt{app-native} và \textbf{không} bắt buộc host trên Vercel để hoàn thành sản phẩm mobile. Chỉ khi chạy \texttt{expo start --web} thì Expo mới phục vụ bản web tạm thời --- đó là kênh phụ, khác hẳn APK production.
+Codebase có thêm phần web trong \texttt{apps/mobile/src} (React + Vite) để tham chiếu giao diện và chạy thử nhanh khi cần. Thành phần này không thay thế luồng phát hành chính của đề tài là ứng dụng di động cài đặt trên thiết bị.
 
 \subsection{4.5 Phát triển cục bộ và kiểm thử}
 
-\subsubsection{Chạy hệ thống cục bộ bằng Docker Compose}
+\subsubsection{Chạy local stack bằng Docker Compose}
 
-Repo cung cấp \texttt{docker-compose.yml} chạy PostgreSQL 16 + backend trong container:
-\texttt{docker compose up -d --build}. Compose mặc định inject các biến \texttt{DATABASE\_URL} (trỏ tới Postgres trong cùng network), \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET}, \texttt{JWT\_ACCESS\_EXPIRES\_IN}, \texttt{JWT\_REFRESH\_EXPIRES\_IN}.
+\texttt{docker-compose.yml} cung cấp 2 service: \texttt{postgres} và \texttt{backend}. Lệnh khởi chạy: \texttt{docker compose up -d --build}.
 
-Khi connect tới Aiven PostgreSQL (production hoặc dev share), driver \texttt{pg} được cấu hình \texttt{ssl: \{ rejectUnauthorized: false \}} trong \texttt{PrismaService} để chấp nhận self-signed certificate chain của Aiven.
+\subsubsection{Migration và seed}
 
-\subsubsection{Quy trình migration}
+\begin{itemize}
+  \item Sinh client: \texttt{pnpm --filter @tinner/backend prisma:generate}
+  \item Migration dev: \texttt{pnpm --filter @tinner/backend prisma:migrate}
+  \item Migration production: \texttt{pnpm --filter @tinner/backend prisma:migrate:deploy}
+  \item Seed: \texttt{pnpm --filter @tinner/backend prisma:seed}
+\end{itemize}
 
-Schema khai báo trong \texttt{prisma/schema.prisma}. Migration tạo bằng \texttt{prisma migrate dev}, áp dụng production qua \texttt{prisma migrate deploy} (chạy trong Dockerfile của backend trước khi start service). Seed dữ liệu (16 món Việt mặc định) thực hiện bằng \texttt{pnpm prisma db seed}.
+Trong container production, script \texttt{apps/backend/scripts/start.sh} chạy \texttt{prisma:migrate:deploy} trước rồi mới start NestJS.
 
-\subsubsection{Kiểm thử backend}
+\subsubsection{Kiểm thử}
 
-Backend dùng Jest cho unit/e2e. Các script trong \texttt{apps/backend/package.json}: \texttt{test}, \texttt{test:cov}, \texttt{test:e2e}.
+Backend có sẵn script Jest (\texttt{test}, \texttt{test:cov}, \texttt{test:e2e}) trong \texttt{apps/backend/package.json}. Ở trạng thái hiện tại của repository, chưa có file test \texttt{*.spec.ts} trong \texttt{src}.
 
 \section{6. Sơ đồ kiến trúc hệ thống (System Architecture Diagram)}
 
-\subsection{6.1 Mô tả kiến trúc tổng quan (mobile-first)}
+\subsection{6.1 Mô tả kiến trúc tổng quan}
 
-Kiến trúc sản phẩm gồm \textbf{ba khối runtime bắt buộc} và một tích hợp dữ liệu bên ngoài:
+Kiến trúc hiện tại gồm ba lớp chính và một tích hợp dữ liệu bên ngoài:
 
 \begin{itemize}
-  \item \textbf{Client layer}: Ứng dụng di động Expo/React Native là client chính. Web frontend (Vite + React) đóng vai trò tham chiếu/landing tuỳ chọn.
-  \item \textbf{API layer}: Backend NestJS expose REST API tại prefix \texttt{/api/v1/*}. Các module nghiệp vụ (Auth, Dishes, Filters, Interactions, Suggestions) tách trách nhiệm rõ ràng; một \texttt{HealthController} riêng phục vụ giám sát.
-  \item \textbf{Data layer}: PostgreSQL trên Aiven (production) hoặc Docker (local). Prisma quản lý schema, migration, truy vấn. DB còn đóng vai trò cache vĩnh viễn cho dữ liệu Overpass (xem chiến lược DB-first ở mục 4.2.4).
-  \item \textbf{Third-party}: Backend tích hợp \textbf{Overpass API} (OpenStreetMap) để truy vấn nhà hàng theo tag \texttt{amenity} trong bán kính 7 km quanh user. Không yêu cầu API key, chỉ cần header \texttt{User-Agent}. \texttt{placeUrl} của mỗi nhà hàng là một URL Google Maps tĩnh dạng \texttt{https://www.google.com/maps/search/?api=1\&query=lat,lng} — chỉ để client mở navigation, không gọi Google Maps API thực sự.
-  \item \textbf{Quản trị phiên}: JWT access token + refresh token (lưu hash trong DB) để duy trì phiên và rotate.
+  \item \textbf{Client layer}: mobile app Expo/React Native là kênh chính; web tham chiếu là thành phần phụ trợ.
+  \item \textbf{API layer}: NestJS backend cung cấp REST API \texttt{/api/v1/*} với guard JWT toàn cục, validation và error handling thống nhất.
+  \item \textbf{Data layer}: PostgreSQL (Aiven trên môi trường cloud, Postgres container ở local), truy cập qua Prisma.
+  \item \textbf{External data}: SerpAPI (Google Maps engine) để lấy danh sách địa điểm ăn uống gần user theo toạ độ.
 \end{itemize}
 
-\subsection{6.2 Sơ đồ (Mermaid)}
-
-Sơ đồ nhấn mạnh: mobile \textbf{installed app} $\rightarrow$ API \textbf{hosted} $\rightarrow$ DB \textbf{hosted}.
+\subsection{6.2 Sơ đồ kiến trúc (Mermaid)}
 
 \begin{lstlisting}[frame=single]
 flowchart TB
   subgraph Clients
-    Mobile[Expo React Native app-native]
-    Web[Vite React Frontend]
+    Mobile[Expo React Native app]
+    WebRef[Optional web reference]
   end
 
   subgraph Backend[NestJS Backend on Render]
     API[REST API /api/v1/*]
-    Guard[JWT Auth Guard + GlobalExceptionFilter]
+    Guard[JWT Auth Guard]
+    Filter[GlobalExceptionFilter + ValidationPipe]
     Auth[Auth Module]
     Domain[Dishes / Filters / Interactions]
-    Suggest[Suggestions Module - DB-first cache]
+    Suggest[Suggestions Module]
     Prisma[Prisma ORM]
   end
 
-  DB[(PostgreSQL on Aiven)]
-  Overpass[Overpass API OpenStreetMap]
+  DB[(PostgreSQL)]
+  SerpAPI[SerpAPI Google Maps]
 
   Mobile --> API
-  Web --> API
+  WebRef --> API
   API --> Guard
+  API --> Filter
   Guard --> Auth
   Guard --> Domain
   Guard --> Suggest
@@ -368,196 +369,143 @@ flowchart TB
   Domain --> Prisma
   Suggest --> Prisma
   Prisma --> DB
-  Suggest -.cache miss.-> Overpass
+  Suggest -.fetch nearby places.-> SerpAPI
 \end{lstlisting}
 
-\subsection{6.3 Luồng request gợi ý nhà hàng}
-
-Luồng \texttt{GET /api/v1/suggestions} minh hoạ cách backend kết hợp DB-first cache với Overpass:
+\subsection{6.3 Luồng xử lý \texttt{/suggestions}}
 
 \begin{enumerate}
-  \item Mobile gửi request kèm \texttt{lat}, \texttt{lng}, có thể có \texttt{dishType}.
-  \item Backend đọc \texttt{user\_filters} để biết \texttt{maxDistanceKm} (mặc định 5, cap 7) và \texttt{minRating}.
-  \item Suggestions service kiểm tra số nhà hàng đã sync trong bbox quanh user. Đủ ngưỡng → bỏ qua Overpass.
-  \item Nếu thiếu, gọi Overpass một lần (bán kính 7 km, filter amenity), parse cuisine/name để gán \texttt{dishTypes}, bulk insert qua \texttt{createMany skipDuplicates}.
-  \item Đọc DB cuối cùng: filter bbox + Haversine, sort theo distance, slice top N, shuffle nếu là chế độ mixed.
+  \item Mobile gửi \texttt{lat}, \texttt{lng}, và có thể có \texttt{dishType}.
+  \item Backend đọc bộ lọc user từ \texttt{user\_filters}.
+  \item \texttt{SuggestionsService} thử gọi SerpAPI (nếu cấu hình API key) và đồng bộ dữ liệu mới vào DB.
+  \item Service truy vấn DB theo dish/mixed mode, lọc theo rating, khoảng cách, cuisine, price.
+  \item Kết quả được chuẩn hoá về payload restaurant và trả cho client để render thẻ swipe.
 \end{enumerate}
 
 \section{7. Thiết kế dịch vụ web (Web Service Design)}
 
 \subsection{7.1 Kiểu dịch vụ và quy ước route}
 
-Backend cung cấp \textbf{REST API} với prefix versioning \texttt{/api/v1}. Bảng tổng hợp các endpoint hiện hữu:
+Hệ thống dùng REST API, version prefix \texttt{/api/v1}. Các endpoint chính:
 
 \begin{center}
 \begin{tabular}{p{5.5cm} p{1.6cm} p{6.5cm}}
 \toprule
 \textbf{Endpoint} & \textbf{Method} & \textbf{Mô tả ngắn} \\
 \midrule
-\texttt{/auth/register} & POST & Public. Đăng ký user mới, trả về tokens. \\
-\texttt{/auth/login} & POST & Public. Đăng nhập bằng email + password. \\
+\texttt{/auth/register} & POST & Public. Đăng ký tài khoản mới. \\
+\texttt{/auth/login} & POST & Public. Đăng nhập bằng email/password. \\
 \texttt{/auth/refresh} & POST & Public. Cấp lại access token từ refresh token. \\
-\texttt{/auth/logout} & POST & Thu hồi refresh token hiện tại. \\
-\texttt{/auth/me} & GET & Trả thông tin user đang đăng nhập. \\
-\texttt{/dishes} & GET & Trả danh sách 16 món Việt + image/description. \\
-\texttt{/filters} & GET/PUT & Đọc/cập nhật bộ filter của user. \\
-\texttt{/interactions/like} & POST & Lưu LIKE\_DISH cho user. \\
-\texttt{/interactions/save} & POST & Lưu SAVE\_RESTAURANT khi swipe right. \\
-\texttt{/interactions/saved} & GET & Danh sách quán đã lưu. \\
-\texttt{/interactions/saved/:id} & DELETE & Bỏ lưu quán theo id interaction. \\
-\texttt{/suggestions} & GET & Trả deck swipe theo \texttt{lat}, \texttt{lng}, \texttt{dishType?} \\
+\texttt{/auth/logout} & POST & Revoke refresh token hiện tại. \\
+\texttt{/auth/me} & GET & Lấy thông tin user đang đăng nhập. \\
+\texttt{/dishes} & GET & Lấy danh sách dish từ DB. \\
+\texttt{/filters} & GET/PUT & Đọc/cập nhật bộ lọc cá nhân. \\
+\texttt{/interactions/like} & POST & Ghi nhận thao tác like dish. \\
+\texttt{/interactions/save} & POST & Lưu nhà hàng khi swipe right. \\
+\texttt{/interactions/saved} & GET & Danh sách nhà hàng đã lưu. \\
+\texttt{/interactions/saved/:id} & DELETE & Xoá một nhà hàng đã lưu. \\
+\texttt{/suggestions} & GET & Trả danh sách gợi ý theo vị trí và filter. \\
 \texttt{/health} & GET & Public. Trạng thái backend (\texttt{\{ status: "ok" \}}). \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Toàn bộ endpoint trên đều có prefix \texttt{/api/v1}.
+Toàn bộ endpoint ở bảng trên đều có tiền tố \texttt{/api/v1}.
 
 \subsection{7.2 Xác thực và phân quyền}
 
-Hệ thống dùng JWT 2 tầng:
 \begin{itemize}
-  \item \textbf{Access token} (HS256, mặc định TTL 15 phút) cho mọi request cần xác thực. Mobile lưu trong memory state, gửi qua header \texttt{Authorization: Bearer <token>}.
-  \item \textbf{Refresh token} (mặc định TTL 30 ngày) được sinh ngẫu nhiên, lưu hash trong bảng \texttt{refresh\_tokens}. Khi access hết hạn, client gọi \texttt{/auth/refresh} để xoay vòng.
+  \item Access token dùng bearer auth cho các route private.
+  \item Refresh token là JWT, được hash bằng \texttt{bcrypt} trước khi lưu DB.
+  \item \texttt{JwtAuthGuard} áp dụng toàn cục; route public dùng \texttt{@Public()} để bypass guard.
+  \item Luồng refresh/logout đều dựa trên so khớp hash refresh token đã lưu trong bảng \texttt{refresh\_tokens}.
 \end{itemize}
-
-\texttt{JwtAuthGuard} đăng ký toàn cục qua \texttt{APP\_GUARD}, áp dụng cho mọi controller mặc định. Để mở public, dùng decorator \texttt{@Public()} (set metadata, guard đọc và bỏ qua) — cấp class hoặc cấp method.
-
-Luồng logout: client gửi refresh token hiện tại tới \texttt{/auth/logout}, backend match hash, xoá record trong DB. Sau đó access token cũ tự hết hạn theo TTL.
 
 \subsection{7.3 Validation, xử lý lỗi và bảo mật}
 
 \begin{itemize}
-  \item \textbf{Validation đầu vào}: DTO kèm \texttt{class-validator}, áp dụng pipeline global \texttt{ValidationPipe} với \texttt{transform: true} (cast string $\to$ number/enum), \texttt{whitelist} (strip field thừa), \texttt{forbidNonWhitelisted} (reject nếu có field lạ).
-  \item \textbf{Xử lý lỗi thống nhất}: \texttt{GlobalExceptionFilter} (\texttt{@Catch()}) là middleware bắt tất cả exception. Phân biệt:
-    \begin{itemize}
-      \item \texttt{HttpException}: trích status + message, validation lỗi → \texttt{message = "Validation failed"}.
-      \item Lỗi không lường (Prisma, TypeError, network\ldots): log full stack server-side qua \texttt{Logger}, trả response generic \texttt{500 Internal server error} để không lộ chi tiết nội bộ.
-    \end{itemize}
-  Trường \texttt{details} (mảng lỗi validation cụ thể) chỉ kèm vào response khi \texttt{NODE\_ENV != "production"} để hỗ trợ developer debug; production luôn giữ message ngắn gọn.
-  \item \textbf{Client error format}: mobile client trong \texttt{api.ts} có hàm \texttt{extractErrorMessage} parse JSON response và lấy chỉ \texttt{.message} (fallback "Request failed with status N" nếu body không hợp lệ), tránh hiển thị JSON dump lên UI.
-  \item \textbf{CORS}: bật \texttt{credentials} (hữu ích khi debug bằng Swagger hoặc web tham chiếu; app native chủ yếu dùng Bearer header).
-  \item \textbf{Secrets qua biến môi trường}: \texttt{DATABASE\_URL}, \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET}, \texttt{JWT\_ACCESS\_EXPIRES\_IN}, \texttt{JWT\_REFRESH\_EXPIRES\_IN} chỉ inject ở runtime, không commit vào repo.
-  \item \textbf{Password storage}: hash bằng \texttt{bcrypt} (cost 10) trong \texttt{AuthService}.
+  \item DTO dùng \texttt{class-validator}; ví dụ \texttt{GetSuggestionsDto} ép kiểu và kiểm tra range \texttt{lat/lng}, \texttt{dishType}.
+  \item \texttt{ValidationPipe} toàn cục bật \texttt{transform}, \texttt{whitelist}, \texttt{forbidNonWhitelisted}.
+  \item \texttt{GlobalExceptionFilter} chuẩn hoá response lỗi; lỗi không lường trước được log server-side và trả mã \texttt{500}.
+  \item Client mobile parse lỗi qua \texttt{extractErrorMessage()} để chỉ hiển thị message ngắn gọn.
+  \item Secrets đọc từ biến môi trường runtime: \texttt{DATABASE\_URL}, JWT secrets, token TTL, và \texttt{SERPAPI\_API\_KEY}.
 \end{itemize}
 
-\subsection{7.4 Tài liệu hoá API (API documentation)}
+\subsection{7.4 Tài liệu hoá API}
 
-Backend tích hợp Swagger/OpenAPI (\texttt{@nestjs/swagger}, \texttt{swagger-ui-express}) trong \texttt{main.ts}: \texttt{DocumentBuilder}, scheme \texttt{Bearer Auth}, UI tại \texttt{/api/docs} trên cùng host Render với API.
+Backend tích hợp Swagger/OpenAPI qua \texttt{@nestjs/swagger}. Tài liệu truy cập tại \texttt{/api/docs}, có cấu hình Bearer Auth trong \texttt{DocumentBuilder}.
 
-Nhờ Swagger, nhóm có thể:
+Swagger được dùng để:
 \begin{itemize}
-  \item QA/dev kiểm thử endpoint và JWT trước khi build app.
-  \item Đồng bộ request/response với \texttt{api.ts} trên mobile (auth, suggestions, interactions).
-  \item Có thể export OpenAPI để sinh client typed hoặc mock server cho integration test.
-\end{itemize}
-
-Hướng nâng cấp tiếp:
-\begin{itemize}
-  \item Bổ sung đầy đủ \texttt{@ApiTags}, \texttt{@ApiOperation}, \texttt{@ApiResponse} cho từng endpoint.
-  \item Chuẩn hoá DTO với annotation Swagger để schema hiển thị chi tiết hơn.
+  \item kiểm thử endpoint nhanh ở môi trường dev;
+  \item đồng bộ payload giữa backend và mobile;
+  \item làm nền cho việc export schema OpenAPI phục vụ automation/testing về sau.
 \end{itemize}
 
 \section{8. Chiến lược triển khai (Deployment Strategy)}
 
 \subsection{8.1 Mục tiêu triển khai}
 
-Chiến lược triển khai chia hệ thống thành các phần đặt ở những dịch vụ chuyên biệt, tận dụng managed service để giảm tải vận hành:
+Chiến lược triển khai hiện tại tập trung vào ba khối runtime bắt buộc:
 \begin{itemize}
-  \item \textbf{Database}: managed PostgreSQL trên Aiven.
-  \item \textbf{Backend}: container web service trên Render.
-  \item \textbf{Frontend web}: static/edge hosting trên Vercel.
-  \item \textbf{Mobile distribution}: build và phân phối qua EAS (Expo Application Services).
+  \item \textbf{Database}: PostgreSQL managed (Aiven).
+  \item \textbf{Backend API}: Docker web service (Render).
+  \item \textbf{Mobile distribution}: build APK qua Expo EAS.
 \end{itemize}
-
 
 \subsection{8.2 Tech stack triển khai}
 
 \begin{itemize}
-  \item \textbf{Database}: PostgreSQL 16 trên \textbf{Aiven} (SSL bắt buộc, \texttt{sslmode=require}).
-  \item \textbf{Backend}: \textbf{Render} (Docker web service, build từ \texttt{apps/backend/Dockerfile}).
-  \item \textbf{FE web}: \textbf{Vercel} (Vite + React).
-  \item \textbf{Mobile}: \textbf{EAS Build} (Expo) — tạo IPA/APK trỏ tới backend production qua \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+  \item \textbf{DB}: PostgreSQL 16, connection string có \texttt{sslmode=require}.
+  \item \textbf{Backend}: Render + Dockerfile tại \texttt{apps/backend/Dockerfile}.
+  \item \textbf{Mobile}: EAS Build (\texttt{preview}/\texttt{production}) với biến \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
 \end{itemize}
 
 \subsection{8.3 Triển khai backend trên Render}
 
-Repo có sẵn \texttt{render.yaml} cấu hình backend deploy theo Docker runtime:
-
+File \texttt{render.yaml} cấu hình service backend:
 \begin{itemize}
-  \item \texttt{type}: \texttt{web}
-  \item \texttt{runtime}: \texttt{docker}
-  \item \texttt{dockerfilePath}: \texttt{./apps/backend/Dockerfile}
-  \item \texttt{dockerContext}: \texttt{.} (lấy toàn monorepo, vì Dockerfile cần \texttt{packages/types})
-  \item \texttt{healthCheckPath}: \texttt{/api/v1/health}
-  \item \texttt{autoDeploy}: \texttt{true}
-  \item \textbf{biến môi trường}:
-  \begin{itemize}
-    \item \texttt{NODE\_ENV=production} (cố định) — đồng thời ẩn validation \texttt{details} khỏi response lỗi qua \texttt{GlobalExceptionFilter}.
-    \item \texttt{PORT=3000} (cố định)
-    \item \texttt{DATABASE\_URL} (\texttt{sync: false}) — connection string Aiven có \texttt{sslmode=require}.
-    \item \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET} (\texttt{sync: false}) — bí mật, sinh ngẫu nhiên.
-    \item \texttt{JWT\_ACCESS\_EXPIRES\_IN=15m}, \texttt{JWT\_REFRESH\_EXPIRES\_IN=30d}.
-  \end{itemize}
+  \item \texttt{runtime: docker}, \texttt{dockerfilePath: ./apps/backend/Dockerfile}, \texttt{dockerContext: .}
+  \item \texttt{healthCheckPath: /api/v1/health}, \texttt{autoDeploy: true}
+  \item biến môi trường bắt buộc: \texttt{DATABASE\_URL}, \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET}, TTL cho access/refresh token.
 \end{itemize}
 
-Dockerfile của backend chạy \texttt{prisma migrate deploy} ở entrypoint trước khi start app, đảm bảo schema luôn đồng bộ với code.
+Ngoài ra, do luồng gợi ý hiện dùng SerpAPI, môi trường production cần cấu hình thêm \texttt{SERPAPI\_API\_KEY}.
 
-\subsection{8.4 Chiến lược DB trên Aiven}
+\subsection{8.4 Chiến lược dữ liệu với Aiven}
 
 \begin{itemize}
-  \item Provision PostgreSQL 16 trên Aiven.
-  \item Lấy connection string dạng \texttt{postgres://\ldots?sslmode=require}, paste vào \texttt{DATABASE\_URL} của Render.
-  \item Trong code (\texttt{PrismaService}), driver \texttt{pg} cấu hình \texttt{ssl: \{ rejectUnauthorized: false \}} để chấp nhận self-signed cert chain của Aiven mà không cần preload CA.
-  \item Migration: \texttt{pnpm prisma migrate deploy} trong Docker entrypoint.
-  \item Seed (\texttt{prisma/seed.ts}) chạy thủ công khi cần: nạp 16 món Việt và bộ ảnh dishes.
-  \item Backup: tận dụng tính năng PITR sẵn có của Aiven; không cần thao tác thêm trên ứng dụng.
+  \item Tạo PostgreSQL instance trên Aiven và lấy URL có SSL.
+  \item Gán URL đó vào \texttt{DATABASE\_URL} của Render.
+  \item \texttt{PrismaService} tự phân tích \texttt{sslmode} và bật \texttt{ssl.rejectUnauthorized=false} khi cần.
+  \item Migrate schema bằng \texttt{prisma:migrate:deploy} trong entrypoint container trước khi start app.
 \end{itemize}
 
-\subsection{8.5 Phát hành ứng dụng di động qua Expo EAS}
-
-Đây là bước ``deploy'' của \textbf{frontend mobile} trong nghĩa sản phẩm di động --- thực chất là \textbf{build và phân phối binary}, không phải host static site.
+\subsection{8.5 Phát hành mobile qua Expo EAS}
 
 \begin{enumerate}
-  \item Cài \texttt{eas-cli}, đăng nhập: \texttt{npx eas-cli login}.
-  \item Dùng \texttt{apps/mobile/eas.json} đã cấu hình sẵn profile \texttt{preview}/\texttt{production} cho Android APK.
-  \item Profile \texttt{preview} hoặc \texttt{production}: build Android APK (\texttt{buildType: apk} nếu cần file cài trực tiếp).
-  \item Set secret/env trên EAS: \texttt{EXPO\_PUBLIC\_API\_BASE\_URL=https://<ten-service>.onrender.com} (không dùng \texttt{localhost} trong bản nộp bài).
-  \item Chạy \texttt{pnpm deploy:apk} hoặc \texttt{pnpm --filter @tinner/mobile apk:build-preview} --- EAS trả link tải APK sau khi build xong.
-  \item Phân phối nội bộ: chia sẻ link EAS, sideload APK, hoặc đưa lên kênh test (Internal Track) nếu có.
+  \item Đăng nhập EAS: \texttt{npx eas-cli login}.
+  \item Dùng \texttt{apps/mobile/eas.json} với profile \texttt{preview}, \texttt{production}.
+  \item Cấu hình \texttt{EXPO\_PUBLIC\_API\_BASE\_URL} trỏ về backend Render.
+  \item Build APK preview: \texttt{pnpm --filter @tinner/mobile apk:build-preview}.
+  \item Build APK production: \texttt{pnpm deploy:apk}.
 \end{enumerate}
 
-\textbf{Lưu ý:} BE phải đã deploy Render và DB Aiven trước khi build APK production; nếu không app sẽ không gọi được API.
+\subsection{8.6 Vận hành và CI/CD}
 
-\subsection{8.6 Phát hành mobile qua EAS}
-
-Mobile build qua \texttt{eas build}:
 \begin{itemize}
-  \item Cấu hình \texttt{eas.json} với profile dev/preview/production.
-  \item Biến môi trường \texttt{EXPO\_PUBLIC\_API\_BASE\_URL} trỏ tới backend Render trong profile production.
-  \item Build iOS/Android binary, phân phối qua Internal Distribution của EAS (TestFlight / Play Internal Track) hoặc qua expo dev client cho team test.
+  \item Render tự động deploy khi có commit mới (\texttt{autoDeploy: true}).
+  \item Health check runtime qua \texttt{/api/v1/health}.
+  \item Pipeline lint/test có thể chạy qua script root (\texttt{pnpm lint}, \texttt{pnpm test}) trước khi merge để giảm rủi ro deploy lỗi.
 \end{itemize}
 
-\subsection{8.7 CI/CD và vận hành}
+\subsection{8.7 Tóm tắt}
 
-Render tự deploy mỗi khi push commit lên branch chính nhờ \texttt{autoDeploy: true}. Để tăng độ tin cậy, có thể bổ sung:
-
+Mô hình triển khai hiện tại phù hợp với phạm vi MVP:
 \begin{itemize}
-  \item CI trước merge (lint + \texttt{tsc --noEmit} + Jest) để chặn lỗi syntax/type rời vào production.
-  \item Monitoring/alert dựa trên health check \texttt{/api/v1/health} (Render có sẵn auto-restart khi health check fail).
-  \item Tách môi trường \texttt{dev / staging / prod} với 3 Render service riêng + 3 Aiven DB riêng nếu cần.
-  \item Tracking lỗi: cân nhắc thêm Sentry hoặc Render log streaming để gom log của \texttt{GlobalExceptionFilter}.
-\end{itemize}
-
-\subsection{8.8 Tóm tắt}
-
-Chiến lược triển khai phù hợp MVP và vẫn mở rộng tốt:
-\begin{itemize}
-  \item \textbf{Aiven} giảm rủi ro vận hành DB nhờ managed PITR + SSL.
-  \item \textbf{Render} chạy backend NestJS dạng container, autoDeploy theo \texttt{render.yaml}, health check tự động.
-  \item \textbf{Vercel} edge hosting cho frontend web tham chiếu.
-  \item \textbf{EAS} build và phân phối mobile.
-  \item Chi phí bên ngoài tối thiểu: không gọi API trả phí, chỉ dùng Overpass (miễn phí) cho dữ liệu nhà hàng.
+  \item backend tách biệt với mobile, scale độc lập;
+  \item DB managed giúp giảm chi phí vận hành thủ công;
+  \item mobile release theo dạng binary APK đúng bối cảnh sản phẩm di động.
 \end{itemize}
 
 \input{sections/5-UserExperience.tex}

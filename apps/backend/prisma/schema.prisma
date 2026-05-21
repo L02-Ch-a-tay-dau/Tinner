@@ -71,10 +71,12 @@ model Restaurant {
   placeUrl         String?           @map("place_url") @db.VarChar(500)
   hours            String?           @db.VarChar(255)
   dishTypes        DishType[]        @default([]) @map("dish_types")
+  cuisineTag       String?           @map("cuisine_tag") @db.VarChar(100)
   phone            String?           @db.VarChar(50)
   rating           Float?
   userRatingsTotal Int               @default(0) @map("user_ratings_total")
   priceLevel       Int?              @map("price_level")
+  imageUrl         String?           @map("image_url") @db.VarChar(500)
   lastSyncedAt     DateTime          @default(now()) @map("last_synced_at")
   createdAt        DateTime          @default(now()) @map("created_at")
   updatedAt        DateTime          @updatedAt @map("updated_at")
