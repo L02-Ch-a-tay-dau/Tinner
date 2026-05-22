@@ -88,7 +88,7 @@ If you also deploy the reference web UI (`Figma Frontend`) to Vercel:
 
 ## Build APK for submission
 
-The mobile app has EAS profiles configured in `apps/mobile/eas.json`.
+The mobile app has EAS profiles configured in `apps/mobile/eas.json` (`preview`, `production`).
 
 1. Login EAS:
 
@@ -96,13 +96,19 @@ The mobile app has EAS profiles configured in `apps/mobile/eas.json`.
 npx eas-cli login
 ```
 
-2. Build preview APK:
+2. Set production API host for EAS build profile (`preview` and `production`):
+
+```bash
+npx eas-cli env:create --scope project --name EXPO_PUBLIC_API_BASE_URL --value https://<your-render-service>.onrender.com
+```
+
+3. Build preview APK:
 
 ```bash
 pnpm --filter @tinner/mobile apk:build-preview
 ```
 
-3. Build production APK:
+4. Build production APK:
 
 ```bash
 pnpm deploy:apk

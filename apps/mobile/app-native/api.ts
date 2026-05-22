@@ -1,5 +1,6 @@
 import * as Location from "expo-location";
-import type { NativeFood, NativeRestaurant, UserProfile } from "./types";
+import type { NativeFood, NativeRestaurant, UserPreferences, UserProfile } from "./types";
+import { priceLevelsToVnd, vndToPriceLevels } from "./types";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
 const DEFAULT_COORDS = { latitude: 10.7769, longitude: 106.7009 };
@@ -26,6 +27,7 @@ interface RestaurantDto {
   dishTypes: string[];
   distanceKm?: number;
   placeUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 interface DishDto {
@@ -74,7 +76,7 @@ function toNativeRestaurant(restaurant: RestaurantDto, dishType: string): Native
     reviews: restaurant.userRatingsTotal ?? 0,
     price,
     isOpen: true,
-    image: seededImage(`${dishType}-${restaurant.id}-restaurant`),
+    image: restaurant.imageUrl ?? seededImage(`${dishType}-${restaurant.id}-restaurant`),
     mapUrl: restaurant.placeUrl ?? "",
   };
 }
@@ -95,7 +97,7 @@ export function toNativeFood(restaurant: RestaurantDto, dishType: string): Nativ
     name: restaurant.name,
     cuisine: dishType,
     description: dishDescription || (addressLine ? addressLine : `${dishType} near you`),
-    image: dishImage || seededImage(`${dishType}-${restaurant.id}-food`),
+    image: dishImage || restaurant.imageUrl || seededImage(`${dishType}-${restaurant.id}-food`),
     calories: addressLine || "Restaurant",
     cardStats: { emoji: "📍", text: `${km}${ratingPart}` },
     tags: [
@@ -225,4 +227,33 @@ export async function saveRestaurantToApi(token: string, restaurantId: string, d
     method: "POST",
     body: JSON.stringify({ restaurantId, dishType }),
   });
+}
+
+export async function saveFiltersToApi(token: string, preferences: UserPreferences) {
+  await request("/api/v1/filters", token, {
+    method: "PUT",
+    body: JSON.stringify({
+      cuisines: preferences.cuisines,
+      priceRanges: vndToPriceLevels(preferences.priceVndMin, preferences.priceVndMax),
+      maxDistanceKm: preferences.maxDistance,
+      minRating: preferences.minRating,
+    }),
+  });
+}
+
+export async function loadFiltersFromApi(token: string): Promise<UserPreferences> {
+  const response = await request<{
+    cuisines: string[];
+    priceRanges: string[];
+    maxDistanceKm: number;
+    minRating: number;
+  }>("/api/v1/filters", token);
+  const vnd = priceLevelsToVnd(response.priceRanges ?? ["$", "$$", "$$$", "$$$$"]);
+  return {
+    cuisines: response.cuisines ?? [],
+    priceVndMin: vnd.vndMin,
+    priceVndMax: vnd.vndMax,
+    maxDistance: response.maxDistanceKm ?? 5,
+    minRating: response.minRating ?? 0,
+  };
 }

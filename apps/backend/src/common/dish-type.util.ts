@@ -40,12 +40,12 @@ const aliasToDishType = Object.entries(dishAliases).reduce<Record<string, DishTy
   return acc;
 }, {});
 
-export const dishTypeFromApiValue = (value: string): DishType | string => {
+export const dishTypeFromApiValue = (value: string): DishType | undefined => {
   if (typeof value !== "string") {
-    return value;
+    return undefined;
   }
   const normalized = normalizeDishInput(value);
-  return aliasToDishType[normalized] ?? value.replaceAll(" ", "_");
+  return aliasToDishType[normalized];
 };
 
 const matcherList: Array<{ aliasNormalized: string; dishType: DishType }> = (() => {

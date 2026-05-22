@@ -10,7 +10,6 @@ interface LoginScreenProps {
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
   onLogin: () => void;
-  onGuestLogin: () => void;
   onGoToSignup: () => void;
 }
 
@@ -22,7 +21,6 @@ export function LoginScreen({
   onEmailChange,
   onPasswordChange,
   onLogin,
-  onGuestLogin,
   onGoToSignup,
 }: LoginScreenProps) {
 
@@ -96,27 +94,11 @@ export function LoginScreen({
           )}
         </Pressable>
 
-        <View style={styles.dividerRow}>
-          <View style={styles.divider} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.divider} />
-        </View>
-
-        <Pressable style={styles.guestButton} onPress={onGuestLogin}>
-          <Text style={styles.guestText}>Quick Login as Guest</Text>
-        </Pressable>
-
         <Pressable onPress={onGoToSignup} hitSlop={8}>
           <Text style={styles.signupText}>
             Don't have an account? <Text style={styles.signupLink}>Sign Up</Text>
           </Text>
         </Pressable>
-
-        <View style={styles.demoBox}>
-          <Text style={styles.demoText}>
-            <Text style={{ fontWeight: "800" }}>Demo:</Text> Create an account or use guest mode.
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -190,37 +172,6 @@ const styles = StyleSheet.create({
   },
   loginText: {
     ...sharedStyles.primaryButtonText,
-  },
-  dividerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginVertical: 4,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    color: colors.faint,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-  },
-  guestButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: spacing.radiusLg,
-    paddingVertical: 14,
-    alignItems: "center",
-    ...shadow.soft,
-  },
-  guestText: {
-    color: "#374151",
-    fontSize: 15,
-    fontWeight: "700",
   },
   signupText: {
     color: colors.muted,
