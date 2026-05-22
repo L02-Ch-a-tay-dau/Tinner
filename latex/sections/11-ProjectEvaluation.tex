@@ -2,7 +2,58 @@
 \label{sec:project_evaluation}
 
 \subsection{Thành công và Thách thức}
-% Phản ánh về những thành công, thách thức và bài học kinh nghiệm.
+\label{subsec:achievements_challenges}
+
+Trải qua quá trình nghiên cứu, thiết kế và phát triển ứng dụng \textbf{Tinner}, nhóm phát triển đã gặt hái được những thành tựu kỹ thuật đáng kể, đồng thời cũng đối mặt với nhiều thách thức thực tế trong quá trình tích hợp hệ thống.
+
+\subsubsection{Thành công đạt được (Achievements)}
+\begin{itemize}
+    \item \textbf{Đột phá về ý tưởng và trải nghiệm người dùng (UX):} Ứng dụng đã giải quyết triệt để tình trạng mệt mỏi khi ra quyết định (\textit{Decision Fatigue}) của người dùng thông qua triết lý sáng tạo \textbf{"Swipe to Bite"}. Luồng vuốt thẻ sang trái (Dislike), sang phải (Like) mang lại cảm giác tương tác trực quan, thú vị và loại bỏ hoàn toàn sự quá tải thông tin so với các ứng dụng ẩm thực truyền thống.
+    \item \textbf{Kiến trúc Monorepo tối ưu và hiệu quả:} Việc áp dụng cấu trúc Monorepo với công nghệ \textbf{pnpm workspaces} đã chứng minh tính ưu việt vượt trội. Đội ngũ có thể dễ dàng quản lý và chia sẻ các gói thư viện dùng chung như `@tinner/types` (định nghĩa DTO/Enum) và `@tinner/api-client` (đối tượng gọi API đã được định kiểu dữ liệu). Điều này loại bỏ hoàn toàn sự bất đồng bộ về cấu trúc dữ liệu giữa Frontend di động và Backend NestJS, giảm thiểu tối đa các lỗi tích hợp API.
+    \item \textbf{Chiến lược Caching "DB-First" xuất sắc:} Để đối phó với độ trễ cao và rủi ro bị giới hạn băng thông (Rate Limit) từ dịch vụ bản đồ mở \textbf{Overpass API}, hệ thống đã triển khai thành công mô hình lưu trữ đệm ưu tiên cơ sở dữ liệu (DB-First Caching). Lần đầu tiên truy cập một khu vực mới chỉ mất từ 5-10 giây để đồng bộ hóa, nhưng tất cả các yêu cầu tiếp theo trong phạm vi 7km đều được phục vụ trực tiếp từ PostgreSQL cục bộ với tốc độ phản hồi đáng kinh ngạc chỉ \textbf{~300ms}, tiết kiệm tối đa tài nguyên mạng cho thiết bị di động.
+    \item \textbf{Độ bền vững kỹ thuật vượt trội:} Hệ thống Backend được bao phủ bởi một bộ kiểm thử tự động toàn diện (hơn \textbf{97\%} Statements Coverage) và 19 kịch bản kiểm thử End-to-End vượt qua thành công \textbf{100\%}. Kết hợp với cơ chế bảo mật xác thực hai lớp \textbf{JWT Rotation} và cơ sở dữ liệu PostgreSQL 16 trên nền tảng đám mây \textbf{Aiven} (bắt buộc sử dụng mã hóa SSL), Tinner đảm bảo tính ổn định và an toàn dữ liệu ở cấp độ thương mại.
+\end{itemize}
+
+\subsubsection{Thách thức đối mặt (Challenges)}
+\begin{itemize}
+    \item \textbf{Sự không đồng nhất của dữ liệu bản đồ mở:} Dữ liệu bản đồ OpenStreetMap được đóng góp từ cộng đồng nên có cấu trúc rất lộn xộn. Rất nhiều quán ăn, nhà hàng bị thiếu thông tin ẩm thực chính (\texttt{cuisine}), thiếu tên tiếng Việt hoặc tọa độ bị sai lệch. Nhóm đã phải xây dựng các bộ lọc biểu thức chính quy (Regex Parser) vô cùng tinh vi để phân tích tên nhà hàng và phân loại chính xác chúng vào 16 danh mục món ăn Việt Nam mặc định của hệ thống.
+    \item   \textbf{Khó khăn tương thích môi trường phát triển (WSL NTFS):} Do hệ điều hành Windows quản lý hệ thống tệp tin NTFS khác biệt so với Linux, việc chạy các liên kết tượng trưng (symlinks) của \textbf{pnpm} bên trong môi trường WSL thông qua thư mục gắn kết \texttt{/mnt/d} đã gây ra nhiều lỗi sập Metro Bundler. Nhóm đã phải nghiên cứu và chuyển đổi sang cơ chế nạp phẳng \texttt{node-linker=hoisted} trong tệp tin \texttt{.npmrc} để giải quyết triệt để vấn đề này.
+    \item \textbf{Giới hạn tài nguyên và thời gian đóng gói sản phẩm (EAS Build):} Quy trình biên dịch và xuất bản tệp APK thông qua dịch vụ đám mây \textbf{Expo Application Services (EAS)} thường xuyên rơi vào trạng thái xếp hàng lâu do giới hạn của tài khoản miễn phí, đồng thời yêu cầu quản lý chứng chỉ bảo mật Android (.keystore) vô cùng nghiêm ngặt, gây không ít trở ngại trong quá trình phát hành các bản thử nghiệm nhanh.
+\end{itemize}
+
+\subsubsection{Bài học kinh nghiệm (Lessons Learned)}
+\begin{itemize}
+    \item \textbf{Tài liệu hóa API tự động từ sớm:} Việc tích hợp và duy trì tài liệu NestJS Swagger UI giúp đội ngũ phát triển ứng dụng di động có thể tự chủ kết nối API mà không cần sự hỗ trợ thủ công trực tiếp từ nhóm Backend.
+    \item \textbf{Thiết kế Caching sớm là chìa khóa:} Đối với các ứng dụng phụ thuộc vào dịch vụ bên thứ ba hoặc dữ liệu địa lý, việc thiết kế chiến lược Caching ngay từ pha kiến trúc giúp giảm thiểu rủi ro vận hành và mang lại trải nghiệm người dùng mượt mà nhất.
+\end{itemize}
 
 \subsection{Các kế hoạch trong tương lai}
-% Đề xuất các cải tiến cho các phiên bản tương lai.
+\label{subsec:future_plans}
+
+Để đưa ứng dụng \textbf{Tinner} lên một tầm cao mới, hướng tới khả năng phục vụ thương mại thực tế quy mô lớn, nhóm đã vạch ra các kế hoạch nâng cấp công nghệ trọng tâm trong tương lai như sau:
+
+\begin{enumerate}
+    \item \textbf{Cá nhân hóa gợi ý bằng Trí tuệ Nhân tạo (AI Recommendation):}
+    \begin{itemize}
+        \item Thay vì cơ chế gợi ý ngẫu nhiên hoặc xáo trộn (shuffle) dựa trên bộ lọc vị trí như hiện tại, hệ thống sẽ tích hợp mô hình lọc cộng tác (\textbf{Collaborative Filtering}) và lọc dựa trên nội dung (\textbf{Content-Based Recommendation}).
+        \item Hệ thống sẽ phân tích sâu hành vi quẹt thẻ của người dùng (tỷ lệ thích một món ăn, thời gian dừng lại xem nhà hàng, tần suất chọn các quán ăn cùng phân khúc giá) để đưa ra các gợi ý có độ chính xác cực cao, tiệm cận với sở thích ẩm thực cá nhân theo thời gian thực.
+    \end{itemize}
+    
+    \item \textbf{Nâng cấp tầng lưu trữ đệm phân tán với Redis:}
+    \begin{itemize}
+        \item Thay thế việc truy vấn khoảng cách Haversine trực tiếp từ PostgreSQL cho mỗi request bằng việc thiết lập một tầng đệm phân tán sử dụng bộ nhớ ngoài \textbf{Redis}.
+        \item Dữ liệu vị trí địa lý của các nhà hàng sẽ được lưu trữ dưới dạng \textbf{Redis Geospatial} (\texttt{GEOADD}, \texttt{GEORADIUS}), giúp giảm tải CPU cho máy chủ cơ sở dữ liệu PostgreSQL cục bộ xuống gần như bằng 0 khi số lượng người dùng đồng thời tăng cao.
+    \end{itemize}
+
+    \item \textbf{Xây dựng chế độ hoạt động ngoại tuyến (Offline Mode):}
+    \begin{itemize}
+        \item Tích hợp thư viện \textbf{Expo SQLite} trực tiếp trên thiết bị di động.
+        \item Người dùng vẫn có thể xem lại danh sách các nhà hàng đã thích (Liked), lịch sử quẹt thẻ và các gợi ý đã được tải sẵn trước đó ngay cả khi điện thoại bị mất kết nối mạng. Toàn bộ tương tác quẹt thẻ ngoại tuyến sẽ được lưu tạm thời và tự động đồng bộ hóa lên Cloud Backend ngay khi thiết bị có kết nối trở lại.
+    \end{itemize}
+
+    \item \textbf{Mở rộng tính năng kết nối xã hội (Social Matchmaking):}
+    \begin{itemize}
+        \item Phát triển tính năng "Phòng ăn nhóm" (Group Dining), cho phép một nhóm bạn bè cùng tham gia vào một phiên quẹt thẻ chung.
+        \item Hệ thống sẽ tự động tính toán giao lộ sở thích (Intersection) giữa lịch sử quẹt của tất cả các thành viên trong nhóm để tìm ra quán ăn "Match" chung nhất mà toàn bộ nhóm đều đồng ý, loại bỏ hoàn toàn việc tranh cãi "Hôm nay ăn gì?".
+    \end{itemize}
+\end{enumerate}

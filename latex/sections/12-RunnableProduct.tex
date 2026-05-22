@@ -2,10 +2,68 @@
 \label{sec:runnable_product}
 
 \subsection{Khả năng tương thích của ứng dụng}
-% Hỗ trợ các thiết bị Android 13+ và chi tiết các gói cài đặt.
+\label{subsec:app_compatibility}
+
+Ứng dụng di động \textbf{Tinner} được phát triển dựa trên nền tảng **Expo SDK 54** và **React Native**, cho phép tạo ra trải nghiệm ứng dụng gốc (Native-like) chất lượng cao. Khả năng tương thích phần cứng và phần mềm của ứng dụng được tối ưu hóa như sau:
+
+\begin{itemize}
+    \item \textbf{Khả năng tương thích hệ điều hành:} Ứng dụng hỗ trợ tối thiểu hệ điều hành \textbf{Android 13 (API Level 33)} trở lên. Điều này đảm bảo ứng dụng có thể khai báo và áp dụng các cơ chế bảo mật quyền riêng tư mới nhất của Android, đặc biệt là quyền truy cập vị trí chính xác (\textit{Fine Location Permission}) và quyền hiển thị thông báo (\textit{Notification Permission}).
+    \item \textbf{Tích hợp phần cứng GPS:} Tinner phụ thuộc chặt chẽ vào tính năng định vị để quét và gợi ý các nhà hàng xung quanh. Sử dụng thư viện \texttt{expo-location}, ứng dụng có khả năng tự động phát hiện vị trí địa lý hiện tại của thiết bị (kinh độ \texttt{lng} và vĩ độ \texttt{lat}) để gửi lên Backend, đồng thời tự động chuyển đổi sang chế độ hỏi quyền định vị một cách tinh tế theo tiêu chuẩn của Apple HIG và Google Material Design.
+    \item \textbf{Tối ưu hiển thị đa thiết bị (Responsive Design):} Giao diện hệ thống thẻ quẹt đã được kiểm thử nghiêm ngặt trên nhiều kích thước và tỷ lệ màn hình khác nhau, từ các màn hình 16:9 truyền thống cho đến các màn hình tràn viền hiện đại (tỉ lệ 19.5:9 hoặc 20:9). Các thành phần UI được thiết kế co giãn linh hoạt bằng đơn vị phần trăm và Flexbox, đảm bảo hình ảnh món ăn, khoảng cách địa lý và nút bấm không bao giờ bị tràn hoặc bị che khuất bởi các khu vực tai thỏ (Notch) hay camera ẩn.
+\end{itemize}
 
 \subsection{Tệp APK và Liên kết Google Drive}
-% Bao gồm liên kết chia sẻ tệp APK tại đây.
+\label{subsec:apk_distribution}
 
-\subsection{Tích hợp Backend và Cấu hình}
-% Giải thích việc tích hợp Backend và quản lý các biến môi trường (Environment Variables/API keys).
+Để tạo sự thuận tiện tối đa cho giảng viên và hội đồng kiểm thử trải nghiệm trực tiếp sản phẩm mà không cần cấu hình môi trường mã nguồn phức tạp, nhóm đã đóng gói thành công phiên bản phát hành ứng dụng độc lập dưới dạng tệp cài đặt **APK (Android Package)**.
+
+Tệp APK đã được biên dịch thành công thông qua dịch vụ đám mây \textbf{Expo Application Services (EAS Cloud Build)} ở chế độ \texttt{preview}, tối ưu hóa dung lượng lưu trữ và loại bỏ các thư viện phát triển thừa để đảm bảo hiệu năng tối đa.
+
+Tệp cài đặt APK được lưu trữ công khai trên nền tảng Google Drive bảo mật. Người dùng có thể dễ dàng tải xuống và cài đặt trực tiếp lên thiết bị di động Android của mình thông qua liên kết chia sẻ dưới đây:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Thành phần sản phẩm} & \textbf{Liên kết truy cập công khai (Google Drive)} \\ \hline
+Tệp cài đặt di động APK & \url{https://drive.google.com/drive/folders/placeholder_tinner_apk_download_link} \\ \hline
+Mã nguồn dự án trên GitHub & \url{https://github.com/L02-Ch-a-tay-dau/Tinner} \\ \hline
+Trang Landing Page giới thiệu & \url{https://tinner-landing.vercel.app} \\ \hline
+Tài liệu hướng dẫn kỹ thuật & \url{https://github.com/L02-Ch-a-tay-dau/Tinner/blob/main/Document.md} \\ \hline
+\end{tabular}
+\caption{Bảng tổng hợp liên kết tải sản phẩm và tài nguyên dự án}
+\end{table}
+
+\textit{Hướng dẫn cài đặt nhanh cho thiết bị Android:}
+\begin{enumerate}
+    \item Truy cập vào liên kết Google Drive ở trên bằng trình duyệt hoặc ứng dụng Drive trên điện thoại Android.
+    \item Tải tệp tin \texttt{tinner-release.apk} về bộ nhớ máy.
+    \item Mở tệp tin vừa tải về, hệ điều hành Android sẽ hiển thị cảnh báo bảo mật. Chọn \textbf{"Cài đặt" (Install)}. Nếu hệ thống yêu cầu, hãy cấp quyền tạm thời \textbf{"Cho phép cài đặt từ nguồn không xác định" (Allow from unknown sources)} cho trình quản lý tệp hoặc trình duyệt của bạn.
+    \item Chờ quy trình cài đặt hoàn tất trong vài giây, sau đó mở ứng dụng từ màn hình chính để bắt đầu trải nghiệm.
+\end{enumerate}
+
+\subsection{Tích hợp Backend và Cấu hình Môi trường Bảo mật}
+\label{subsec:backend_integration}
+
+Sự toàn vẹn của ứng dụng \textbf{Tinner} được đảm bảo thông qua sự tích hợp chặt chẽ giữa ứng dụng Client di động và Backend NestJS đã được triển khai trên hạ tầng đám mây chuyên nghiệp. Đặc biệt, công tác quản lý cấu hình và bảo mật thông tin được đặt lên hàng đầu:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/swagger-docs.png}
+    \caption{Giao diện tài liệu hóa API tự động qua NestJS Swagger UI phục vụ tích hợp}
+    \label{fig:swagger_docs}
+\end{figure}
+
+\begin{enumerate}
+    \item \textbf{Cơ chế bảo mật mã nguồn nghiêm ngặt:}
+    \begin{itemize}
+        \item Mọi thông tin nhạy cảm như khóa ký bí mật JWT (\texttt{JWT_ACCESS_SECRET}, \texttt{JWT_REFRESH_SECRET}), thông tin đăng nhập cơ sở dữ liệu (\texttt{DATABASE_URL}) và các API Key bên thứ ba hoàn toàn không được lưu trữ trong mã nguồn đẩy lên kho GitHub.
+        \item Tất cả các tệp cấu hình môi trường \texttt{.env} đều được liệt kê chi tiết trong tệp \texttt{.gitignore} của Monorepo để ngăn chặn tuyệt đối tình trạng rò rỉ thông tin bảo mật.
+    \end{itemize}
+    
+    \item \textbf{Cấu hình động trên môi trường đám mây (Production Config):}
+    \begin{itemize}
+        \item \textbf{Đối với Backend (Render Cloud):} Các biến môi trường được định nghĩa và nạp động trực tiếp qua bảng điều khiển quản trị bảo mật của Render. Chuỗi kết nối PostgreSQL đến dịch vụ đám mây \textbf{Aiven} bắt buộc phải có tham số bảo mật mã hóa SSL (\texttt{sslmode=require}) để ngăn chặn các cuộc tấn công nghe lén dữ liệu (Man-in-the-middle).
+        \item \textbf{Đối với Mobile Client (EAS Secrets):} Khi đóng gói tệp APK thông qua EAS Cloud, biến môi trường \texttt{EXPO_PUBLIC_API_BASE_URL} (trỏ về địa chỉ domain chính thức của backend trên Render: \texttt{https://tinner-backend.onrender.com}) sẽ được nạp động vào mã nguồn từ Expo Secret Store ngay trong chu kỳ biên dịch, giúp tối ưu hóa bảo mật và chống dịch ngược mã nguồn dịch vụ.
+    \end{itemize}
+\end{enumerate}

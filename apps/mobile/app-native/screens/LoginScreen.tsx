@@ -24,18 +24,18 @@ export function LoginScreen({
   onGoToSignup,
 }: LoginScreenProps) {
 
-  // // 2. Hàm gây lỗi thử nghiệm
-  // const handleTestSentry = () => {
-  //   // Cách 1: Gửi một tin nhắn thông báo (không gây crash)
-  //   Sentry.captureMessage("User clicked Test Sentry button");
+  // 2. Hàm gây lỗi thử nghiệm
+  const handleTestSentry = () => {
+    // Cách 1: Gửi một tin nhắn thông báo (không gây crash)
+    Sentry.captureMessage("User clicked Test Sentry button");
 
-  //   // Cách 2: Gây lỗi crash thực sự sau 500ms để bạn kịp thấy thông báo
-  //   Alert.alert("Sentry Test", "Ứng dụng sẽ gây lỗi và gửi báo cáo sau 1 giây.");
+    // Cách 2: Gây lỗi crash thực sự sau 500ms để bạn kịp thấy thông báo
+    Alert.alert("Sentry Test", "Ứng dụng sẽ gây lỗi và gửi báo cáo sau 1 giây.");
     
-  //   setTimeout(() => {
-  //     throw new Error("Tinner App Test Error: " + new Date().toISOString());
-  //   }, 1000);
-  // };
+    setTimeout(() => {
+      throw new Error("Tinner App Test Error: " + new Date().toISOString());
+    }, 1000);
+  };
 
   return (
     <View style={styles.screen}>
@@ -180,6 +180,20 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     color: colors.orange,
+    fontWeight: "700",
+  },
+  guestButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: spacing.radiusLg,
+    paddingVertical: 14,
+    alignItems: "center",
+    ...shadow.soft,
+  },
+  guestText: {
+    color: "#374151",
+    fontSize: 15,
     fontWeight: "700",
   },
   demoBox: {
