@@ -74,4 +74,12 @@ apps/mobile/src_backup/
 *.swp
 *.swo
 
-CLAUDE.md
+# Temp docs and scripts
+Assign3.md
+Document.md
+Tinner_logo.ai
+Tinnet_logo-01.png
+test-register.js
+apps/backend/prisma.config.cjs
+apps/backend/prisma.config.ts.disabled
+.bin.disabled/
