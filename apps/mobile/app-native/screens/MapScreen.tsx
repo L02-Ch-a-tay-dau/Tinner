@@ -1,7 +1,20 @@
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FlatList,
+  Image,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FilterChip, filterChipStyles } from "../components/FilterChip";
 import { colors, sharedStyles, shadow, spacing } from "../theme";
 import type { NativeFood, NativeRestaurant } from "../types";
+
+const PAGE_SIZE = 20;
 
 type MapRestaurant = NativeRestaurant & { foodName: string; cuisine: string };
 
@@ -10,7 +23,6 @@ interface MapScreenProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onOpenFilters: () => void;
-  /** Shown when there are zero places (e.g. before swipe deck loads) */
   emptyHint?: string;
 }
 
@@ -47,7 +59,9 @@ function RestaurantRow({ restaurant }: { restaurant: MapRestaurant }) {
               </Text>
             </View>
           </View>
-          <Text style={styles.rating}>★ {restaurant.rating.toFixed(1)} ({restaurant.reviews.toLocaleString()}) · {restaurant.price}</Text>
+          <Text style={styles.rating}>
+            ★ {restaurant.rating.toFixed(1)} ({restaurant.reviews.toLocaleString()}) · {restaurant.price}
+          </Text>
           <View style={styles.foodPill}>
             <Text style={styles.foodPillText}>{restaurant.foodName}</Text>
           </View>
@@ -76,25 +90,39 @@ export function MapScreen({
   emptyHint,
 }: MapScreenProps) {
   const insets = useSafeAreaInsets();
-  const allRestaurants = collectRestaurants(foods);
-  const query = searchQuery.trim().toLowerCase();
-  const filtered = query
-    ? allRestaurants.filter(
-        (restaurant) =>
-          restaurant.name.toLowerCase().includes(query) ||
-          restaurant.foodName.toLowerCase().includes(query) ||
-          restaurant.cuisine.toLowerCase().includes(query) ||
-          restaurant.address.toLowerCase().includes(query),
-      )
-    : allRestaurants;
+  const [minRating, setMinRating] = useState(0);
+  const [maxDistanceKm, setMaxDistanceKm] = useState<number | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  return (
-    <View
-      style={[
-        sharedStyles.screen,
-        { paddingBottom: spacing.navHeight + Math.max(12, insets.bottom + 8) },
-      ]}
-    >
+  const allRestaurants = useMemo(() => collectRestaurants(foods), [foods]);
+  const query = searchQuery.trim().toLowerCase();
+
+  const filtered = useMemo(() => {
+    return allRestaurants.filter((restaurant) => {
+      if (query) {
+        const haystack = `${restaurant.name} ${restaurant.foodName} ${restaurant.cuisine} ${restaurant.address}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (minRating > 0 && restaurant.rating < minRating) return false;
+      if (maxDistanceKm != null && restaurant.distanceNum > maxDistanceKm) return false;
+      return true;
+    });
+  }, [allRestaurants, query, minRating, maxDistanceKm]);
+
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+  const hasMore = visible.length < filtered.length;
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [query, minRating, maxDistanceKm, foods.length]);
+
+  const loadMore = useCallback(() => {
+    if (!hasMore) return;
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  }, [hasMore]);
+
+  const listHeader = (
+    <>
       <View style={styles.header}>
         <View>
           <Text style={sharedStyles.headerTitle}>Nearby Restaurants</Text>
@@ -118,21 +146,61 @@ export function MapScreen({
         />
       </View>
 
-      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-        {filtered.length === 0 ? (
+      <View style={filterChipStyles.filterRow}>
+        <Text style={filterChipStyles.filterLabel}>Rating</Text>
+        <View style={filterChipStyles.chipRow}>
+          <FilterChip label="All" active={minRating === 0} onPress={() => setMinRating(0)} />
+          <FilterChip label="3+" active={minRating === 3} onPress={() => setMinRating(3)} />
+          <FilterChip label="4+" active={minRating === 4} onPress={() => setMinRating(4)} />
+        </View>
+      </View>
+
+      <View style={[filterChipStyles.filterRow, styles.filterBlock]}>
+        <Text style={filterChipStyles.filterLabel}>Distance</Text>
+        <View style={filterChipStyles.chipRow}>
+          <FilterChip label="All" active={maxDistanceKm == null} onPress={() => setMaxDistanceKm(null)} />
+          <FilterChip label="≤1 km" active={maxDistanceKm === 1} onPress={() => setMaxDistanceKm(1)} />
+          <FilterChip label="≤3 km" active={maxDistanceKm === 3} onPress={() => setMaxDistanceKm(3)} />
+          <FilterChip label="≤5 km" active={maxDistanceKm === 5} onPress={() => setMaxDistanceKm(5)} />
+        </View>
+      </View>
+    </>
+  );
+
+  return (
+    <View
+      style={[
+        sharedStyles.screen,
+        { paddingBottom: spacing.navHeight + Math.max(12, insets.bottom + 8) },
+      ]}
+    >
+      <FlatList
+        data={visible}
+        keyExtractor={(item) => `${item.id}-${item.foodName}`}
+        renderItem={({ item }) => <RestaurantRow restaurant={item} />}
+        ListHeaderComponent={listHeader}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.35}
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>⌕</Text>
             <Text style={styles.emptyTitle}>No restaurants found</Text>
             <Text style={styles.emptyText}>
-              {foods.length === 0 && emptyHint ? emptyHint : "Try adjusting your filters"}
+              {foods.length === 0 && emptyHint ? emptyHint : "Try adjusting search or filters"}
             </Text>
           </View>
-        ) : (
-          filtered.map((restaurant) => (
-            <RestaurantRow key={`${restaurant.id}-${restaurant.foodName}`} restaurant={restaurant} />
-          ))
-        )}
-      </ScrollView>
+        }
+        ListFooterComponent={
+          hasMore ? (
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Scroll for more...</Text>
+            </View>
+          ) : null
+        }
+      />
     </View>
   );
 }
@@ -162,6 +230,9 @@ const styles = StyleSheet.create({
     ...sharedStyles.input,
     paddingLeft: 46,
   },
+  filterBlock: {
+    marginBottom: 12,
+  },
   list: {
     gap: 12,
     paddingBottom: 24,
@@ -172,6 +243,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderLight,
     overflow: "hidden",
+    marginBottom: 12,
     ...shadow.soft,
   },
   rowMain: {
@@ -287,5 +359,15 @@ const styles = StyleSheet.create({
     color: colors.faint,
     fontSize: 13,
     marginTop: 4,
+    textAlign: "center",
+    paddingHorizontal: 24,
+  },
+  footer: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  footerText: {
+    color: colors.faint,
+    fontSize: 12,
   },
 });

@@ -70,6 +70,7 @@ export class InteractionsService {
       .map((item) => ({
         interactionId: item.id,
         dishType: dishTypeToApiValue(item.dishType),
+        savedAt: item.createdAt.toISOString(),
         restaurant: {
           ...item.restaurant,
           dishTypes: item.restaurant?.dishTypes.map(dishTypeToApiValue),

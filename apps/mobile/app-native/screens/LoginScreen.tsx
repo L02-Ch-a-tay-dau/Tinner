@@ -1,7 +1,17 @@
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
-import { colors, shadow, sharedStyles, spacing } from "../theme";
-// 1. Import Sentry
-import * as Sentry from '@sentry/react-native';
+import { useRef } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardFormContainer } from "../components/KeyboardFormContainer";
+import { colors, sharedStyles } from "../theme";
+
 interface LoginScreenProps {
   email: string;
   password: string;
@@ -23,36 +33,17 @@ export function LoginScreen({
   onLogin,
   onGoToSignup,
 }: LoginScreenProps) {
-
-  // 2. Hàm gây lỗi thử nghiệm
-  const handleTestSentry = () => {
-    // Cách 1: Gửi một tin nhắn thông báo (không gây crash)
-    Sentry.captureMessage("User clicked Test Sentry button");
-
-    // Cách 2: Gây lỗi crash thực sự sau 500ms để bạn kịp thấy thông báo
-    Alert.alert("Sentry Test", "Ứng dụng sẽ gây lỗi và gửi báo cáo sau 1 giây.");
-    
-    setTimeout(() => {
-      throw new Error("Tinner App Test Error: " + new Date().toISOString());
-    }, 1000);
-  };
+  const insets = useSafeAreaInsets();
+  const passwordRef = useRef<TextInput>(null);
 
   return (
-    <View style={styles.screen}>
+    <KeyboardFormContainer keyboardVerticalOffset={insets.top}>
       <View style={styles.card}>
         <View style={styles.logoWrap}>
           <Image source={require("../../assets/tinner_logo.png")} style={styles.logo} />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Log in to continue swiping</Text>
         </View>
-        {/* Nút Test Sentry (Đã ẩn đi)
-        <Pressable 
-          style={[styles.debugButton, { borderColor: colors.orange, marginTop: 10 }]} 
-          onPress={handleTestSentry}
-        >
-          <Text style={[styles.debugText, { color: colors.orange }]}>🛠 Debug: Trigger Sentry Error</Text>
-        </Pressable>
-        */}
 
         {!!error && <Text style={sharedStyles.error}>{error}</Text>}
 
@@ -66,6 +57,10 @@ export function LoginScreen({
               placeholder="you@example.com"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
               style={styles.input}
             />
           </View>
@@ -76,10 +71,14 @@ export function LoginScreen({
           <View style={styles.inputWrap}>
             <Text style={styles.inputIcon}>⌕</Text>
             <TextInput
+              ref={passwordRef}
               value={password}
               onChangeText={onPasswordChange}
               placeholder="••••••••"
               secureTextEntry
+              autoCapitalize="none"
+              returnKeyType="go"
+              onSubmitEditing={onLogin}
               style={styles.input}
             />
           </View>
@@ -99,17 +98,11 @@ export function LoginScreen({
           </Text>
         </Pressable>
       </View>
-    </View>
+    </KeyboardFormContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
   card: {
     gap: 16,
   },
@@ -122,11 +115,6 @@ const styles = StyleSheet.create({
     height: 80,
     resizeMode: "contain",
     marginBottom: 16,
-  },
-  logoText: {
-    color: colors.white,
-    fontSize: 32,
-    fontWeight: "900",
   },
   title: {
     color: colors.text,
@@ -176,32 +164,5 @@ const styles = StyleSheet.create({
   signupLink: {
     color: colors.orange,
     fontWeight: "700",
-  },
-  debugButton: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: spacing.radiusLg,
-    paddingVertical: 14,
-    alignItems: "center",
-    ...shadow.soft,
-  },
-  debugText: {
-    color: "#374151",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  demoBox: {
-    backgroundColor: colors.blueSoft,
-    borderWidth: 1,
-    borderColor: "#bfdbfe",
-    borderRadius: spacing.radiusXl,
-    padding: 14,
-    marginTop: 4,
-  },
-  demoText: {
-    color: "#1e3a8a",
-    fontSize: 12,
-    lineHeight: 17,
   },
 });

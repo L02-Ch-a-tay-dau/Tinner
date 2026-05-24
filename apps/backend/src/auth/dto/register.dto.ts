@@ -11,43 +11,43 @@ import { MatchesField } from "../../common/decorators/matches-field.decorator";
 
 export class RegisterDto {
   @IsString()
-  @IsNotEmpty({ message: "Username is required" })
-  @MinLength(3, { message: "Username must be at least 3 characters" })
-  @MaxLength(50, { message: "Username must not exceed 50 characters" })
+  @IsNotEmpty({ message: "Vui lòng nhập tên đăng nhập" })
+  @MinLength(3, { message: "Tên đăng nhập phải có ít nhất 3 ký tự" })
+  @MaxLength(50, { message: "Tên đăng nhập không được vượt quá 50 ký tự" })
   @Matches(/^[a-zA-Z0-9_]+$/, {
-    message: "Username may only contain letters, numbers, and underscores",
+    message: "Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới",
   })
   username!: string;
 
-  @IsEmail({}, { message: "Email must be a valid email address" })
-  @IsNotEmpty({ message: "Email is required" })
-  @MaxLength(255, { message: "Email must not exceed 255 characters" })
+  @IsEmail({}, { message: "Email phải đúng định dạng" })
+  @IsNotEmpty({ message: "Vui lòng nhập email" })
+  @MaxLength(255, { message: "Email không được vượt quá 255 ký tự" })
   email!: string;
 
   @IsString()
-  @IsNotEmpty({ message: "Password is required" })
-  @MinLength(8, { message: "Password must be at least 8 characters" })
-  @MaxLength(128, { message: "Password must not exceed 128 characters" })
+  @IsNotEmpty({ message: "Vui lòng nhập mật khẩu" })
+  @MinLength(8, { message: "Mật khẩu phải có ít nhất 8 ký tự" })
+  @MaxLength(128, { message: "Mật khẩu không được vượt quá 128 ký tự" })
   @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, {
-    message: "Password must contain at least one letter and one number",
+    message: "Mật khẩu phải có ít nhất một chữ cái và một chữ số",
   })
   password!: string;
 
   @IsString()
-  @IsNotEmpty({ message: "Please confirm your password" })
-  @MatchesField("password", { message: "Passwords do not match" })
+  @IsNotEmpty({ message: "Vui lòng xác nhận mật khẩu" })
+  @MatchesField("password", { message: "Mật khẩu xác nhận không khớp" })
   confirmPassword!: string;
 
   @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: "Full name must not be blank" })
-  @MaxLength(255, { message: "Full name must not exceed 255 characters" })
+  @IsNotEmpty({ message: "Họ tên không được để trống" })
+  @MaxLength(255, { message: "Họ tên không được vượt quá 255 ký tự" })
   fullName?: string;
 
   @IsOptional()
   @IsString()
   @Matches(/^\+?[0-9\s\-()\u002e]{7,20}$/, {
-    message: "Phone number is invalid",
+    message: "Số điện thoại không hợp lệ",
   })
   phone?: string;
 }

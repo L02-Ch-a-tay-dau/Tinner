@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FoodSwipeCard } from "../components/FoodSwipeCard";
 import { RestaurantPanel } from "../components/RestaurantPanel";
 import { colors, sharedStyles, shadow, spacing } from "../theme";
-import { type NativeFood, type UserProfile } from "../types";
+import { type NativeFood } from "../types";
 
 interface SwipeScreenProps {
   deck: NativeFood[];
@@ -12,12 +12,11 @@ interface SwipeScreenProps {
   likedCount: number;
   skippedCount: number;
   selectedFood: NativeFood | null;
-  user: UserProfile | null;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   onReset: () => void;
-  onLogout: () => void;
   onClosePanel: () => void;
+  onOpenFilters: () => void;
 }
 
 export function SwipeScreen({
@@ -27,12 +26,11 @@ export function SwipeScreen({
   likedCount,
   skippedCount,
   selectedFood,
-  user,
   onSwipeLeft,
   onSwipeRight,
   onReset,
-  onLogout,
   onClosePanel,
+  onOpenFilters,
 }: SwipeScreenProps) {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -52,13 +50,13 @@ export function SwipeScreen({
           <Image source={require("../../assets/tinner_logo.png")} style={styles.brandLogo} />
           <View style={styles.brandTextColumn}>
             <Text style={styles.brandTitle}>Tinner</Text>
-            <Text style={styles.brandSub}>Find your next craving</Text>
+            <Text style={styles.brandSub}>Find your next carving</Text>
           </View>
         </View>
 
         <View style={styles.statsRow}>
-          <Pressable style={styles.logoutButton} onPress={onLogout}>
-            <Text style={styles.logoutIcon}>⇥</Text>
+          <Pressable style={sharedStyles.iconButton} onPress={onOpenFilters}>
+            <Text style={styles.filterIcon}>☷</Text>
           </Pressable>
         </View>
       </View>
@@ -70,31 +68,31 @@ export function SwipeScreen({
           {loading ? (
             <View style={styles.emptyCard}>
               <ActivityIndicator color={colors.orange} size="large" />
-              <Text style={styles.emptyTitle}>Loading nearby places...</Text>
+              <Text style={styles.emptyTitle}>Đang tải địa điểm gần bạn...</Text>
             </View>
           ) : deck.length === 0 ? (
             <View style={styles.emptyCard}>
               {likedCount === 0 && skippedCount === 0 ? (
                 <>
                   <Text style={styles.emptyEmoji}>📍</Text>
-                  <Text style={styles.emptyTitle}>No nearby places</Text>
+                  <Text style={styles.emptyTitle}>Không có địa điểm phù hợp</Text>
                   <Text style={styles.emptyText}>
-                    The suggestions API returned no restaurants in range. Try again or open Filters to relax distance
-                    or rating.
+                    Không tìm thấy nhà hàng trong phạm vi hiện tại. Hãy thử lại hoặc mở bộ lọc để nới
+                    khoảng cách và đánh giá.
                   </Text>
                   <Pressable style={styles.startOverButton} onPress={onReset}>
-                    <Text style={styles.startOverText}>↻ Retry</Text>
+                    <Text style={styles.startOverText}>↻ Thử lại</Text>
                   </Pressable>
                 </>
               ) : (
                 <>
                   <Text style={styles.emptyEmoji}>🍽️</Text>
-                  <Text style={styles.emptyTitle}>You've seen it all!</Text>
+                  <Text style={styles.emptyTitle}>Bạn đã xem hết rồi!</Text>
                   <Text style={styles.emptyText}>
-                    You liked {likedCount} place{likedCount !== 1 ? "s" : ""}. Ready for another round?
+                    Bạn đã thích {likedCount} địa điểm. Sẵn sàng cho lượt vuốt mới chưa?
                   </Text>
                   <Pressable style={styles.startOverButton} onPress={onReset}>
-                    <Text style={styles.startOverText}>↻ Start Over</Text>
+                    <Text style={styles.startOverText}>↻ Bắt đầu lại</Text>
                   </Pressable>
                 </>
               )}
@@ -194,6 +192,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
+  filterIcon: {
+    color: colors.muted,
+    fontSize: 18,
+    fontWeight: "800",
+  },
   stat: {
     alignItems: "center",
   },
@@ -209,22 +212,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 28,
     backgroundColor: colors.border,
-  },
-  logoutButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#fff1f1",
-    borderWidth: 1,
-    borderColor: "#ffe4e4",
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadow.soft,
-  },
-  logoutIcon: {
-    color: colors.red,
-    fontSize: 20,
-    fontWeight: "800",
   },
   error: {
     marginBottom: 8,

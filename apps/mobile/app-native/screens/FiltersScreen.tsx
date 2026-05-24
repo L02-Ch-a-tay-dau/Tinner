@@ -1,4 +1,14 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, sharedStyles, shadow, spacing } from "../theme";
 import { CUISINE_OPTIONS, defaultPreferences, type UserPreferences, type UserProfile } from "../types";
@@ -85,11 +95,13 @@ export function FiltersScreen({
       : `${formatVnd(preferences.priceVndMin)}đ – ${formatVnd(preferences.priceVndMax)}đ`;
 
   return (
-    <View
+    <KeyboardAvoidingView
       style={[
         sharedStyles.screen,
         { paddingBottom: spacing.navHeight + Math.max(12, insets.bottom + 8) },
       ]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={insets.top}
     >
       <View style={styles.header}>
         <View>
@@ -101,28 +113,12 @@ export function FiltersScreen({
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{(user?.name || user?.email || "U").slice(0, 1).toUpperCase()}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.profileLabel}>Hồ sơ</Text>
-            <View style={styles.profileRow}>
-              <Text style={styles.profileKey}>Tên</Text>
-              <Text style={styles.profileValue} numberOfLines={1}>
-                {user?.name || ""}
-              </Text>
-            </View>
-            <View style={styles.profileRow}>
-              <Text style={styles.profileKey}>Email</Text>
-              <Text style={styles.profileValue} numberOfLines={1}>
-                {user?.email || ""}
-              </Text>
-            </View>
-          </View>
-        </View>
-
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <PillGroup
           title="Loại quán"
           subtitle={preferences.cuisines.length === 0 ? "Tất cả" : `${preferences.cuisines.length} loại`}
@@ -228,7 +224,7 @@ export function FiltersScreen({
           )}
         </Pressable>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

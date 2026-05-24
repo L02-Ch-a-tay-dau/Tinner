@@ -36,8 +36,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       error = body.error ?? HttpStatus[status] ?? "Error";
       if (Array.isArray(body.message)) {
-        message = "Validation failed";
-        validationDetails = body.message;
+        validationDetails = body.message.filter(
+          (item): item is string => typeof item === "string" && item.trim().length > 0,
+        );
+        message =
+          validationDetails.length > 0
+            ? validationDetails.slice(0, 3).join("\n")
+            : "Dữ liệu không hợp lệ";
       } else {
         message = body.message ?? exception.message;
       }
@@ -56,7 +61,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path: request.url,
     };
 
-    if (this.isDev && validationDetails) {
+    if (validationDetails) {
       payload.details = validationDetails;
     }
 

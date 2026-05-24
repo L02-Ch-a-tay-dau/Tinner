@@ -1,16 +1,16 @@
+import { useRef } from "react";
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { colors, shadow, sharedStyles, spacing } from "../theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { KeyboardFormContainer } from "../components/KeyboardFormContainer";
+import { colors, sharedStyles } from "../theme";
 
 interface SignupScreenProps {
   username: string;
@@ -45,133 +45,138 @@ export function SignupScreen({
   onSubmit,
   onGoToLogin,
 }: SignupScreenProps) {
+  const insets = useSafeAreaInsets();
+  const emailRef = useRef<TextInput>(null);
+  const fullNameRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.card}>
-          <View style={styles.logoWrap}>
-            <Image source={require("../../assets/tinner_logo.png")} style={styles.logo} />
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Start your food discovery journey</Text>
-          </View>
-
-          {!!error && <Text style={sharedStyles.error}>{error}</Text>}
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Username</Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>@</Text>
-              <TextInput
-                value={username}
-                onChangeText={onUsernameChange}
-                placeholder="your_username"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.input}
-              />
-            </View>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>✉</Text>
-              <TextInput
-                value={email}
-                onChangeText={onEmailChange}
-                placeholder="you@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.input}
-              />
-            </View>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>
-              Full Name <Text style={styles.optionalHint}>(optional)</Text>
-            </Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>☺</Text>
-              <TextInput
-                value={fullName}
-                onChangeText={onFullNameChange}
-                placeholder="John Doe"
-                autoCapitalize="words"
-                style={styles.input}
-              />
-            </View>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>⌕</Text>
-              <TextInput
-                value={password}
-                onChangeText={onPasswordChange}
-                placeholder="••••••••"
-                secureTextEntry
-                autoCapitalize="none"
-                style={styles.input}
-              />
-            </View>
-            <Text style={styles.hint}>At least 8 characters, include a letter and a number.</Text>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.inputIcon}>⌕</Text>
-              <TextInput
-                value={confirmPassword}
-                onChangeText={onConfirmPasswordChange}
-                placeholder="••••••••"
-                secureTextEntry
-                autoCapitalize="none"
-                style={styles.input}
-              />
-            </View>
-          </View>
-
-          <Pressable style={styles.submitButton} onPress={onSubmit} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.submitText}>Create Account</Text>
-            )}
-          </Pressable>
-
-          <Pressable onPress={onGoToLogin} hitSlop={8}>
-            <Text style={styles.loginText}>
-              Already have an account? <Text style={styles.loginLink}>Log In</Text>
-            </Text>
-          </Pressable>
+    <KeyboardFormContainer keyboardVerticalOffset={insets.top}>
+      <View style={styles.card}>
+        <View style={styles.logoWrap}>
+          <Image source={require("../../assets/tinner_logo.png")} style={styles.logo} />
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Start your food discovery journey</Text>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        {!!error && <Text style={sharedStyles.error}>{error}</Text>}
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Username</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>@</Text>
+            <TextInput
+              value={username}
+              onChangeText={onUsernameChange}
+              placeholder="your_username"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => emailRef.current?.focus()}
+              style={styles.input}
+            />
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Email</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>✉</Text>
+            <TextInput
+              ref={emailRef}
+              value={email}
+              onChangeText={onEmailChange}
+              placeholder="you@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => fullNameRef.current?.focus()}
+              style={styles.input}
+            />
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>
+            Full Name <Text style={styles.optionalHint}>(optional)</Text>
+          </Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>☺</Text>
+            <TextInput
+              ref={fullNameRef}
+              value={fullName}
+              onChangeText={onFullNameChange}
+              placeholder="John Doe"
+              autoCapitalize="words"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              style={styles.input}
+            />
+          </View>
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Password</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>⌕</Text>
+            <TextInput
+              ref={passwordRef}
+              value={password}
+              onChangeText={onPasswordChange}
+              placeholder="••••••••"
+              secureTextEntry
+              autoCapitalize="none"
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+              style={styles.input}
+            />
+          </View>
+          <Text style={styles.hint}>At least 8 characters, include a letter and a number.</Text>
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Confirm Password</Text>
+          <View style={styles.inputWrap}>
+            <Text style={styles.inputIcon}>⌕</Text>
+            <TextInput
+              ref={confirmPasswordRef}
+              value={confirmPassword}
+              onChangeText={onConfirmPasswordChange}
+              placeholder="••••••••"
+              secureTextEntry
+              autoCapitalize="none"
+              returnKeyType="go"
+              onSubmitEditing={onSubmit}
+              style={styles.input}
+            />
+          </View>
+        </View>
+
+        <Pressable style={styles.submitButton} onPress={onSubmit} disabled={loading}>
+          {loading ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.submitText}>Create Account</Text>
+          )}
+        </Pressable>
+
+        <Pressable onPress={onGoToLogin} hitSlop={8}>
+          <Text style={styles.loginText}>
+            Already have an account? <Text style={styles.loginLink}>Log In</Text>
+          </Text>
+        </Pressable>
+      </View>
+    </KeyboardFormContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 24,
-  },
   card: {
     gap: 14,
   },
@@ -184,11 +189,6 @@ const styles = StyleSheet.create({
     height: 80,
     resizeMode: "contain",
     marginBottom: 16,
-  },
-  logoText: {
-    color: colors.white,
-    fontSize: 32,
-    fontWeight: "900",
   },
   title: {
     color: colors.text,

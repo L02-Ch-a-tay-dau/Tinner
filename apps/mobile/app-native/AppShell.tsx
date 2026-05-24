@@ -4,6 +4,9 @@ import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BottomTabs } from "./components/BottomTabs";
 import {
+  deleteSavedFromApi,
+  fetchMeFromApi,
+  fetchSavedFromApi,
   getSuggestionsFromApi,
   loadFiltersFromApi,
   loginWithApi,
@@ -11,9 +14,11 @@ import {
   saveRestaurantToApi,
   signupWithApi,
 } from "./api";
+import { validateLogin, validateSignup } from "./auth-validation";
 import { getDesignFoods } from "./designData";
 import { CollectionsScreen } from "./screens/CollectionsScreen";
 import { FiltersScreen } from "./screens/FiltersScreen";
+import { ProfileScreen } from "./screens/ProfileScreen";
 import { LoginScreen } from "./screens/LoginScreen";
 import { MapScreen } from "./screens/MapScreen";
 import { SignupScreen } from "./screens/SignupScreen";
@@ -54,6 +59,7 @@ export function AppShell() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [preferencesReturnScreen, setPreferencesReturnScreen] = useState<ScreenName>("swipe");
 
   const loadApiDeck = useCallback(async (authToken?: string) => {
     const effectiveToken = authToken ?? token;
@@ -68,11 +74,11 @@ export function AppShell() {
       const result = await getSuggestionsFromApi(effectiveToken);
       setDeck([...result.cards].reverse());
       if (result.usedFallback && result.cards.length > 0) {
-        setError("Location permission is off, showing suggestions near central Ho Chi Minh City.");
+        setError("Bạn chưa bật vị trí. Đang hiển thị gợi ý quanh trung tâm TP.HCM.");
       }
     } catch (err) {
       setDeck([]);
-      setError(err instanceof Error ? err.message : "Unable to load suggestions");
+      setError(err instanceof Error ? err.message : "Không thể tải gợi ý lúc này.");
     } finally {
       setLoading(false);
     }
@@ -80,44 +86,95 @@ export function AppShell() {
 
   const mapFoods = useMemo(() => (token ? deck : []), [deck, token]);
 
+  const loadSavedCollections = useCallback(async (authToken: string) => {
+    try {
+      const saved = await fetchSavedFromApi(authToken);
+      setLikedFoods(saved);
+    } catch {
+      setLikedFoods([]);
+    }
+  }, []);
+
   const signup = async () => {
+    const validationError = validateSignup({
+      username: signupUsername,
+      email,
+      password,
+      confirmPassword: signupConfirmPassword,
+      fullName: signupFullName,
+    });
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
+      const trimmedFullName = signupFullName.trim();
       await signupWithApi({
-        username: signupUsername,
-        email,
+        username: signupUsername.trim(),
+        email: email.trim(),
         password,
         confirmPassword: signupConfirmPassword,
-        fullName: signupFullName,
+        ...(trimmedFullName ? { fullName: trimmedFullName } : {}),
       });
       setScreen("login");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Signup failed");
+      setError(err instanceof Error ? err.message : "Không thể đăng ký. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
   const login = async () => {
+    const validationError = validateLogin(email, password);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
-      const response = await loginWithApi(email, password);
+      const response = await loginWithApi(email.trim(), password);
       setToken(response.token);
-      setUser(response.profile);
       setLikedCount(0);
       setSkippedCount(0);
-      const saved = await loadFiltersFromApi(response.token);
-      setPreferences(saved);
       setScreen("swipe");
-      await loadApiDeck(response.token);
+
+      try {
+        const profile = await fetchMeFromApi(response.token);
+        setUser(profile);
+      } catch {
+        setUser(response.profile);
+      }
+
+      try {
+        const savedFilters = await loadFiltersFromApi(response.token);
+        setPreferences(savedFilters);
+      } catch {
+        // Keep default preferences if filters cannot be loaded yet.
+      }
+
+      void loadSavedCollections(response.token);
+      void loadApiDeck(response.token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid email or password");
+      setError(err instanceof Error ? err.message : "Không thể đăng nhập. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
+
+  const clearErrorOnChange = useCallback(
+    (setter: (value: string) => void) => (value: string) => {
+      if (error) {
+        setError("");
+      }
+      setter(value);
+    },
+    [error],
+  );
 
   const logout = () => {
     setToken("");
@@ -158,9 +215,11 @@ export function AppShell() {
     ]);
 
     if (token && current.restaurants[0]) {
-      void saveRestaurantToApi(token, current.restaurants[0].id, current.dishType).catch((err) => {
-        setError(err instanceof Error ? err.message : "Could not save restaurant");
-      });
+      void saveRestaurantToApi(token, current.restaurants[0].id, current.dishType)
+        .then(() => loadSavedCollections(token))
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : "Không thể lưu nhà hàng.");
+        });
     }
 
     setDeck((items) => items.slice(0, -1));
@@ -183,6 +242,11 @@ export function AppShell() {
     setLikedFood(null);
   };
 
+  const openPreferences = (from: ScreenName) => {
+    setPreferencesReturnScreen(from);
+    setScreen("preferences");
+  };
+
   const savePreferences = async () => {
     setSaving(true);
     if (token) {
@@ -196,7 +260,33 @@ export function AppShell() {
       setDeck([]);
     }
     setSaving(false);
-    setScreen("swipe");
+    setScreen(preferencesReturnScreen);
+  };
+
+  const removeSavedFood = (foodId: string) => {
+    const target = likedFoods.find((item) => item.foodId === foodId);
+    setLikedFoods((items) => items.filter((item) => item.foodId !== foodId));
+    if (likedFood?.id === foodId) {
+      setLikedFood(null);
+    }
+    if (token && target?.interactionId) {
+      void deleteSavedFromApi(token, target.interactionId).catch((err) => {
+        setError(err instanceof Error ? err.message : "Không thể xóa mục đã lưu.");
+      });
+    }
+  };
+
+  const clearAllSaved = () => {
+    const toDelete = likedFoods.filter((item) => item.interactionId);
+    setLikedFoods([]);
+    setLikedFood(null);
+    if (token) {
+      for (const item of toDelete) {
+        if (item.interactionId) {
+          void deleteSavedFromApi(token, item.interactionId).catch(() => undefined);
+        }
+      }
+    }
   };
 
   const selectLikedFood = (foodId: string) => {
@@ -230,8 +320,8 @@ export function AppShell() {
           password={password}
           error={error}
           loading={loading}
-          onEmailChange={setEmail}
-          onPasswordChange={setPassword}
+          onEmailChange={clearErrorOnChange(setEmail)}
+          onPasswordChange={clearErrorOnChange(setPassword)}
           onLogin={() => void login()}
           onGoToSignup={() => {
             setError("");
@@ -254,11 +344,11 @@ export function AppShell() {
           confirmPassword={signupConfirmPassword}
           error={error}
           loading={loading}
-          onUsernameChange={setSignupUsername}
-          onEmailChange={setEmail}
-          onFullNameChange={setSignupFullName}
-          onPasswordChange={setPassword}
-          onConfirmPasswordChange={setSignupConfirmPassword}
+          onUsernameChange={clearErrorOnChange(setSignupUsername)}
+          onEmailChange={clearErrorOnChange(setEmail)}
+          onFullNameChange={clearErrorOnChange(setSignupFullName)}
+          onPasswordChange={clearErrorOnChange(setPassword)}
+          onConfirmPasswordChange={clearErrorOnChange(setSignupConfirmPassword)}
           onSubmit={() => void signup()}
           onGoToLogin={() => {
             setError("");
@@ -281,12 +371,11 @@ export function AppShell() {
             likedCount={likedCount}
             skippedCount={skippedCount}
             selectedFood={likedFood}
-            user={user}
             onSwipeLeft={swipeLeft}
             onSwipeRight={swipeRight}
             onReset={resetDeck}
-            onLogout={logout}
             onClosePanel={() => setLikedFood(null)}
+            onOpenFilters={() => openPreferences("swipe")}
           />
         )}
 
@@ -295,10 +384,10 @@ export function AppShell() {
             foods={mapFoods}
             searchQuery={mapSearch}
             onSearchChange={setMapSearch}
-            onOpenFilters={() => setScreen("filters")}
+            onOpenFilters={() => openPreferences("map")}
             emptyHint={
               !token
-                ? "Sign in to load nearby restaurants from the map (suggestions API)."
+                ? "Hãy đăng nhập để tải các nhà hàng gần bạn trên bản đồ."
                 : undefined
             }
           />
@@ -307,14 +396,27 @@ export function AppShell() {
         {screen === "collections" && (
           <CollectionsScreen
             likedFoods={likedFoods}
+            selectedFood={likedFood}
             onStartSwiping={() => setScreen("swipe")}
-            onRemove={(foodId) => setLikedFoods((items) => items.filter((item) => item.foodId !== foodId))}
-            onClearAll={() => setLikedFoods([])}
+            onRemove={removeSavedFood}
+            onClearAll={clearAllSaved}
             onSelectFood={selectLikedFood}
+            onClosePanel={() => setLikedFood(null)}
           />
         )}
 
         {screen === "filters" && (
+          <ProfileScreen
+            user={user}
+            savedCount={likedFoods.length}
+            onUpdateProfile={setUser}
+            onLogout={logout}
+            onOpenPreferences={() => setScreen("preferences")}
+            onOpenSaved={() => setScreen("collections")}
+          />
+        )}
+
+        {screen === "preferences" && (
           <FiltersScreen
             user={user}
             preferences={preferences}

@@ -1,4 +1,4 @@
-export type ScreenName = "login" | "signup" | "swipe" | "map" | "collections" | "filters";
+export type ScreenName = "login" | "signup" | "swipe" | "map" | "collections" | "filters" | "preferences";
 
 export interface NativeRestaurant {
   id: string;
@@ -30,6 +30,8 @@ export interface NativeFood {
 
 export interface LikedFood {
   foodId: string;
+  /** Server interaction id for DELETE /interactions/saved/:id */
+  interactionId?: string;
   foodName: string;
   cuisine: string;
   likedAt: string;
@@ -53,6 +55,7 @@ export interface UserPreferences {
 export interface UserProfile {
   email: string;
   name: string;
+  username?: string;
 }
 
 export const CUISINE_OPTIONS = [

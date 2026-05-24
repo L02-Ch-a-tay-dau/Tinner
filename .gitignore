@@ -73,3 +73,5 @@ apps/mobile/src_backup/
 .idea/
 *.swp
 *.swo
+
+CLAUDE.md

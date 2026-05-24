@@ -23,12 +23,12 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const emailTaken = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (emailTaken) {
-      throw new ConflictException("Email is already registered");
+      throw new ConflictException("Email này đã được sử dụng");
     }
 
     const usernameTaken = await this.prisma.user.findUnique({ where: { username: dto.username } });
     if (usernameTaken) {
-      throw new ConflictException("Username is already taken");
+      throw new ConflictException("Tên đăng nhập này đã được sử dụng");
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -65,12 +65,12 @@ export class AuthService {
       where: { email: dto.email },
     });
     if (!user) {
-      throw new UnauthorizedException("Invalid credentials");
+      throw new UnauthorizedException("Email chưa được đăng ký");
     }
 
     const matched = await bcrypt.compare(dto.password, user.password);
     if (!matched) {
-      throw new UnauthorizedException("Invalid credentials");
+      throw new UnauthorizedException("Mật khẩu không đúng");
     }
 
     const tokens = await this.issueTokens(user);
@@ -91,10 +91,10 @@ export class AuthService {
     const payload = await this.verifyRefreshToken(refreshToken);
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {
-      throw new UnauthorizedException("Account associated with this token no longer exists");
+      throw new UnauthorizedException("Tài khoản liên kết với phiên đăng nhập không còn tồn tại");
     }
     if (!user.isActive) {
-      throw new UnauthorizedException("Account has been deactivated");
+      throw new UnauthorizedException("Tài khoản đã bị vô hiệu hóa");
     }
 
     const storedTokens = await this.prisma.refreshToken.findMany({
@@ -107,7 +107,7 @@ export class AuthService {
 
     const matchedToken = await this.findMatchedToken(storedTokens, refreshToken);
     if (!matchedToken) {
-      throw new UnauthorizedException("Refresh token has been revoked or does not exist");
+      throw new UnauthorizedException("Phiên đăng nhập đã hết hạn hoặc không còn hợp lệ");
     }
 
     await this.prisma.refreshToken.update({
@@ -148,7 +148,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.isActive) {
-      throw new UnauthorizedException("Account not found or has been deactivated");
+      throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa");
     }
     return this.toUserDto(user);
   }
@@ -208,7 +208,7 @@ export class AuthService {
         secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
       });
     } catch {
-      throw new UnauthorizedException("Invalid refresh token");
+      throw new UnauthorizedException("Phiên đăng nhập không hợp lệ");
     }
   }
 

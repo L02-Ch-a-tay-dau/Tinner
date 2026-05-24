@@ -1,9 +1,17 @@
 import * as Location from "expo-location";
-import type { NativeFood, NativeRestaurant, UserPreferences, UserProfile } from "./types";
+import type { LikedFood, NativeFood, NativeRestaurant, UserPreferences, UserProfile } from "./types";
 import { priceLevelsToVnd, vndToPriceLevels } from "./types";
+import { formatDishTypeLabel } from "./dish-type-labels";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:3000";
 const DEFAULT_COORDS = { latitude: 10.7769, longitude: 106.7009 };
+const REQUEST_TIMEOUT_MS = 30_000;
+
+interface ApiErrorBody {
+  message?: unknown;
+  details?: unknown;
+  error?: unknown;
+}
 
 interface AuthResponseDto {
   tokens: {
@@ -82,6 +90,7 @@ function toNativeRestaurant(restaurant: RestaurantDto, dishType: string): Native
 }
 
 export function toNativeFood(restaurant: RestaurantDto, dishType: string): NativeFood {
+  const dishLabel = formatDishTypeLabel(dishType);
   const dish = cachedDishMap?.[normalizeDishKey(dishType)];
   const dishImage = dish?.imageUrl ?? null;
   const dishDescription = dish?.description ?? null;
@@ -95,13 +104,13 @@ export function toNativeFood(restaurant: RestaurantDto, dishType: string): Nativ
   return {
     id: `${restaurant.id}-${dishType}`,
     name: restaurant.name,
-    cuisine: dishType,
-    description: dishDescription || (addressLine ? addressLine : `${dishType} near you`),
+    cuisine: dishLabel,
+    description: dishDescription || (addressLine ? addressLine : `${dishLabel} ở gần bạn`),
     image: dishImage || restaurant.imageUrl || seededImage(`${dishType}-${restaurant.id}-food`),
     calories: addressLine || "Restaurant",
     cardStats: { emoji: "📍", text: `${km}${ratingPart}` },
     tags: [
-      `#${dishType.replaceAll(/\s+/g, "")}`,
+      `#${dishLabel.replaceAll(/\s+/g, "")}`,
       ...(restaurant.dishTypes ?? []).slice(0, 2).map((tag) => `#${String(tag).replaceAll(/\s+/g, "")}`),
     ],
     dishType,
@@ -109,12 +118,42 @@ export function toNativeFood(restaurant: RestaurantDto, dishType: string): Nativ
   };
 }
 
+function normalizeApiErrorMessage(body: ApiErrorBody, status: number): string {
+  if (Array.isArray(body.details)) {
+    const details = body.details.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    if (details.length > 0) {
+      return details.join("\n");
+    }
+  }
+
+  if (Array.isArray(body.message)) {
+    const messages = body.message.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    if (messages.length > 0) {
+      return messages.join("\n");
+    }
+  }
+
+  if (typeof body.message === "string" && body.message.trim().length > 0) {
+    return body.message;
+  }
+
+  if (status === 401) {
+    return "Tài khoản hoặc mật khẩu chưa đúng.";
+  }
+  if (status === 409) {
+    return "Dữ liệu đã tồn tại. Vui lòng thử thông tin khác.";
+  }
+  if (status >= 500) {
+    return "Lỗi máy chủ. Vui lòng thử lại sau.";
+  }
+
+  return `Yêu cầu thất bại`;
+}
+
 async function extractErrorMessage(response: Response): Promise<string> {
   try {
-    const body = (await response.json()) as { message?: unknown };
-    if (body && typeof body.message === "string" && body.message.trim().length > 0) {
-      return body.message;
-    }
+    const body = (await response.json()) as ApiErrorBody;
+    return normalizeApiErrorMessage(body, response.status);
   } catch {
     // response body was not JSON (e.g., HTML error page or empty body)
   }
@@ -122,21 +161,34 @@ async function extractErrorMessage(response: Response): Promise<string> {
 }
 
 async function request<T>(path: string, token?: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers ?? undefined),
-    },
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-  if (!response.ok) {
-    const message = await extractErrorMessage(response);
-    throw new Error(message);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init?.headers ?? undefined),
+      },
+    });
+
+    if (!response.ok) {
+      const message = await extractErrorMessage(response);
+      throw new Error(message);
+    }
+
+    return (await response.json()) as T;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("Yêu cầu quá thời gian chờ. Vui lòng kiểm tra kết nối và thử lại.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return (await response.json()) as T;
 }
 
 export async function loginWithApi(email: string, password: string) {
@@ -239,6 +291,60 @@ export async function saveFiltersToApi(token: string, preferences: UserPreferenc
       minRating: preferences.minRating,
     }),
   });
+}
+
+interface SavedInteractionDto {
+  interactionId: string;
+  dishType: string;
+  savedAt: string;
+  restaurant: RestaurantDto;
+}
+
+export function mapSavedToLikedFoods(items: SavedInteractionDto[]): LikedFood[] {
+  return items.map((item) => {
+    const restaurant = item.restaurant;
+    const dishType = item.dishType;
+    const nativeRestaurant = toNativeRestaurant(restaurant, dishType);
+    const nativeFood = toNativeFood(restaurant, dishType);
+    return {
+      foodId: `${restaurant.id}-${dishType}`,
+      interactionId: item.interactionId,
+      foodName: restaurant.name,
+      cuisine: formatDishTypeLabel(dishType),
+      likedAt: item.savedAt,
+      image: nativeFood.image,
+      description: nativeFood.description,
+      tags: nativeFood.tags,
+      dishType,
+      calories: nativeFood.calories,
+      cardStats: nativeFood.cardStats,
+      restaurants: [nativeRestaurant],
+    };
+  });
+}
+
+export async function fetchSavedFromApi(token: string): Promise<LikedFood[]> {
+  const items = await request<SavedInteractionDto[]>("/api/v1/interactions/saved", token);
+  return mapSavedToLikedFoods(items);
+}
+
+export async function deleteSavedFromApi(token: string, interactionId: string) {
+  await request<{ success: boolean }>(`/api/v1/interactions/saved/${interactionId}`, token, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchMeFromApi(token: string): Promise<UserProfile> {
+  const user = await request<{
+    email: string;
+    username: string;
+    fullName: string | null;
+  }>("/api/v1/auth/me", token);
+  return {
+    email: user.email,
+    username: user.username,
+    name: user.fullName || user.username || user.email,
+  };
 }
 
 export async function loadFiltersFromApi(token: string): Promise<UserPreferences> {
