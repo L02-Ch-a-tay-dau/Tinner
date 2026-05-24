@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   ChevronLeft,
@@ -8,66 +8,60 @@ import {
   Search,
   ExternalLink,
   Filter,
+  Loader2,
 } from "lucide-react";
 import { useNavigate } from "react-router";
-import { foods } from "../data/foods";
-import { preferencesService } from "../utils/preferences";
-import type { Restaurant } from "../data/foods";
+import { type SuggestionCard, fetchSuggestions } from "../utils/api";
+import { authService } from "../utils/auth";
+import { getDeck, setDeck as storeDeck } from "../utils/store";
 
 export default function MapView() {
   const navigate = useNavigate();
-  const preferences = preferencesService.getPreferences();
-  
-  // Get all restaurants from all foods
-  const getAllRestaurants = (): Array<Restaurant & { foodName: string; cuisine: string }> => {
-    const restaurants: Array<Restaurant & { foodName: string; cuisine: string }> = [];
-    
-    foods.forEach((food) => {
-      food.restaurants.forEach((restaurant) => {
-        // Apply filters
-        const matchesCuisine =
-          preferences.cuisines.length === 0 || preferences.cuisines.includes(food.cuisine);
-        const matchesPrice = preferences.priceRange.includes(restaurant.price);
-        const matchesRating = restaurant.rating >= preferences.minRating;
-        const matchesDistance = restaurant.distanceNum <= preferences.maxDistance;
-
-        if (matchesCuisine && matchesPrice && matchesRating && matchesDistance) {
-          restaurants.push({
-            ...restaurant,
-            foodName: food.name,
-            cuisine: food.cuisine,
-          });
-        }
-      });
-    });
-
-    // Sort by distance
-    return restaurants.sort((a, b) => a.distanceNum - b.distanceNum);
-  };
-
+  const [cards, setCards] = useState<SuggestionCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRestaurant, setSelectedRestaurant] = useState<
-    (Restaurant & { foodName: string; cuisine: string }) | null
-  >(null);
 
-  const allRestaurants = getAllRestaurants();
-  const filteredRestaurants = allRestaurants.filter(
-    (r) =>
-      r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.foodName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.cuisine.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    if (!authService.isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
 
-  const openInGoogleMaps = (restaurant: Restaurant) => {
+    const cached = getDeck();
+    if (cached && cached.length > 0) {
+      setCards(cached);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    fetchSuggestions()
+      .then((data) => {
+        setCards(data);
+        storeDeck(data);
+      })
+      .catch(() => { /* noop */ })
+      .finally(() => setLoading(false));
+  }, [navigate]);
+
+  // Collect all restaurants from all cards
+  const allRestaurants = cards.flatMap((card) =>
+    card.restaurants.map((r) => ({ ...r, foodName: card.name, cuisine: card.cuisine })),
+  ).sort((a, b) => a.distanceNum - b.distanceNum);
+
+  const query = searchQuery.trim().toLowerCase();
+  const filtered = query
+    ? allRestaurants.filter(
+        (r) =>
+          r.name.toLowerCase().includes(query) ||
+          r.foodName.toLowerCase().includes(query) ||
+          r.cuisine.toLowerCase().includes(query),
+      )
+    : allRestaurants;
+
+  const openInGoogleMaps = (restaurant: { name: string; address: string }) => {
     const url = `https://www.google.com/maps/search/${encodeURIComponent(
-      restaurant.name + " " + restaurant.address
-    )}`;
-    window.open(url, "_blank");
-  };
-
-  const getDirections = (restaurant: Restaurant) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-      restaurant.address
+      restaurant.name + " " + restaurant.address,
     )}`;
     window.open(url, "_blank");
   };
@@ -86,7 +80,7 @@ export default function MapView() {
           <div className="flex-1">
             <h1 className="text-gray-900 text-xl">Nearby Restaurants</h1>
             <p className="text-gray-400 text-xs mt-0.5">
-              {filteredRestaurants.length} location{filteredRestaurants.length !== 1 ? "s" : ""} found
+              {loading ? "Loading..." : `${filtered.length} location${filtered.length !== 1 ? "s" : ""} found`}
             </p>
           </div>
           <button
@@ -110,18 +104,26 @@ export default function MapView() {
         </div>
       </div>
 
-
       {/* Restaurant List */}
-      <div className="flex-1 overflow-y-auto pb-4 ">
-        <div className="space-y-3">
-          {filteredRestaurants.length === 0 ? (
-            <div className="text-center py-12">
-              <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No restaurants found</p>
-              <p className="text-gray-400 text-sm mt-1">Try adjusting your filters</p>
-            </div>
-          ) : (
-            filteredRestaurants.map((restaurant, index) => (
+      <div className="flex-1 overflow-y-auto pb-4">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-orange-500 animate-spin mb-3" />
+            <p className="text-gray-500">Loading nearby places...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">
+              {cards.length === 0 ? "No restaurants found" : "No results match your search"}
+            </p>
+            <p className="text-gray-400 text-sm mt-1">
+              {cards.length === 0 ? "Try again from Swipe view to load data" : "Try a different search term"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((restaurant, index) => (
               <motion.div
                 key={`${restaurant.id}-${restaurant.foodName}`}
                 initial={{ opacity: 0, y: 20 }}
@@ -184,7 +186,7 @@ export default function MapView() {
                 {/* Action buttons */}
                 <div className="flex gap-2 px-3 pb-3">
                   <button
-                    onClick={() => getDirections(restaurant)}
+                    onClick={() => openInGoogleMaps(restaurant)}
                     className="flex-1 flex items-center justify-center gap-1 bg-orange-50 hover:bg-orange-100 text-orange-600 px-3 py-2 rounded-xl text-xs transition-colors"
                   >
                     <Navigation className="w-3 h-3" />
@@ -199,9 +201,9 @@ export default function MapView() {
                   </button>
                 </div>
               </motion.div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

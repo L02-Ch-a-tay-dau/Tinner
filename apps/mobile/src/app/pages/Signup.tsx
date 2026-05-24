@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { Utensils, Mail, Lock, User } from "lucide-react";
+import { Utensils, Mail, Lock, User, Loader2 } from "lucide-react";
 import { authService } from "../utils/auth";
 import { motion } from "motion/react";
 
@@ -10,8 +10,9 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -20,11 +21,19 @@ export default function Signup() {
       return;
     }
 
-    const user = authService.signup(name, email, password);
-    if (user) {
-      navigate("/");
-    } else {
-      setError("Account already exists with this email");
+    setLoading(true);
+    try {
+      const user = await authService.signup(name, email, password);
+      if (user) {
+        await authService.login(email, password);
+        navigate("/");
+      } else {
+        setError("Account already exists with this email");
+      }
+    } catch {
+      setError("Connection failed. Is the backend running?");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -67,6 +76,7 @@ export default function Signup() {
                 placeholder="John Doe"
                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -82,6 +92,7 @@ export default function Signup() {
                 placeholder="you@example.com"
                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -97,6 +108,7 @@ export default function Signup() {
                 placeholder="••••••••"
                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 required
+                disabled={loading}
               />
             </div>
             <p className="text-xs text-gray-500 mt-1.5">Must be at least 6 characters</p>
@@ -105,13 +117,14 @@ export default function Signup() {
           <motion.button
             whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-2xl transition-colors shadow-lg shadow-orange-200"
+            disabled={loading}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-3 rounded-2xl transition-colors shadow-lg shadow-orange-200 flex items-center justify-center gap-2"
           >
-            Sign Up
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            {loading ? "Creating account..." : "Sign Up"}
           </motion.button>
         </form>
 
-        {/* Login link */}
         <p className="text-center text-gray-600 text-sm mt-6">
           Already have an account?{" "}
           <Link to="/login" className="text-orange-500 hover:text-orange-600 transition-colors">

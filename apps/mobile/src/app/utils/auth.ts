@@ -1,68 +1,56 @@
+import { getStoredToken, getStoredUser, clearAuth, loginApi, signupApi, storeAuth, fetchFilters } from "./api";
+
 export interface User {
   id: string;
   email: string;
   name: string;
 }
 
-const AUTH_KEY = "foodswipe_user";
-
 export const authService = {
-  login: (email: string, password: string): User | null => {
-    // Mock authentication - in production, this would call your backend
-    const users = JSON.parse(localStorage.getItem("foodswipe_users") || "[]");
-    const user = users.find((u: any) => u.email === email && u.password === password);
-    
-    if (user) {
-      const authUser = { id: user.id, email: user.email, name: user.name };
-      localStorage.setItem(AUTH_KEY, JSON.stringify(authUser));
-      return authUser;
-    }
-    return null;
-  },
-
-  loginAsGuest: (): User => {
-    const guestUser = {
-      id: "guest-" + crypto.randomUUID(),
-      email: "guest@tinner.app",
-      name: "Guest",
-    };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(guestUser));
-    return guestUser;
-  },
-
-  signup: (name: string, email: string, password: string): User | null => {
-    const users = JSON.parse(localStorage.getItem("foodswipe_users") || "[]");
-    
-    // Check if user already exists
-    if (users.some((u: any) => u.email === email)) {
+  login: async (email: string, password: string): Promise<User | null> => {
+    try {
+      const data = await loginApi(email, password);
+      const user: User = {
+        id: data.user.email,
+        email: data.user.email,
+        name: data.user.fullName ?? data.user.username ?? data.user.email,
+      };
+      return user;
+    } catch {
       return null;
     }
+  },
 
-    const newUser = {
-      id: crypto.randomUUID(),
-      name,
-      email,
-      password, // In production, this should be hashed
-    };
-
-    users.push(newUser);
-    localStorage.setItem("foodswipe_users", JSON.stringify(users));
-
-    const authUser = { id: newUser.id, email: newUser.email, name: newUser.name };
-    localStorage.setItem(AUTH_KEY, JSON.stringify(authUser));
-    return authUser;
+  signup: async (name: string, email: string, password: string): Promise<User | null> => {
+    try {
+      await signupApi({
+        username: email,
+        email,
+        password,
+        confirmPassword: password,
+        fullName: name,
+      });
+      return { id: email, email, name };
+    } catch {
+      return null;
+    }
   },
 
   logout: () => {
-    localStorage.removeItem(AUTH_KEY);
+    clearAuth();
   },
 
   getCurrentUser: (): User | null => {
-    const userStr = localStorage.getItem(AUTH_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    const stored = getStoredUser();
+    if (!stored) return null;
+    return { id: stored.email, email: stored.email, name: stored.name };
   },
 
   isAuthenticated: (): boolean => {
-    return !!localStorage.getItem(AUTH_KEY);
+    return !!getStoredToken();
+  },
+
+  getToken: (): string | null => {
+    return getStoredToken();
   },
 };

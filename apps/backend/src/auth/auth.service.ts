@@ -89,7 +89,6 @@ export class AuthService {
 
   async refresh(refreshToken: string) {
     const payload = await this.verifyRefreshToken(refreshToken);
-    const tokenHash = await bcrypt.hash(refreshToken, 10);
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {
       throw new UnauthorizedException("Account associated with this token no longer exists");
@@ -116,7 +115,6 @@ export class AuthService {
       data: {
         revoked: true,
         lastUsedAt: new Date(),
-        tokenHash,
       },
     });
 
@@ -128,9 +126,10 @@ export class AuthService {
     };
   }
 
-  async logout(refreshToken: string) {
+  async logout(userId: string, refreshToken: string) {
     const storedTokens = await this.prisma.refreshToken.findMany({
       where: {
+        userId,
         revoked: false,
         expiresAt: { gt: new Date() },
       },

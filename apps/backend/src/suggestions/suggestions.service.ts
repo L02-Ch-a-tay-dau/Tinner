@@ -1,11 +1,24 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DishType, Prisma } from "@prisma/client";
+import { categorizeCuisine, CUISINE_CATEGORIES, type CuisineCategory } from "../common/cuisine-category.util";
 import { dishTypeToApiValue } from "../common/dish-type.util";
 import { FiltersService } from "../filters/filters.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { OverpassRestaurant, OverpassService } from "./overpass.service";
+import { OverpassRestaurant } from "./overpass.service";
+import { SerpapiService } from "./serpapi.service";
 
-interface RestaurantWithDistance {
+const PRICE_LEVEL_MAP: Record<string, number> = { $: 1, $$: 2, $$$: 3, $$$$: 4 };
+
+const CUISINE_FILTER_ALIASES: Record<string, CuisineCategory[]> = {
+  "Đồ Nhật": ["Đồ ăn Nhật Bản"],
+  "Đồ Hàn": ["Đồ ăn Hàn Quốc"],
+  "Đồ Hoa": ["Đồ ăn Trung Hoa"],
+  "Đồ Âu": ["Đồ ăn Âu"],
+  "Đồ uống & Cafe": ["Cafe", "Trà sữa"],
+  "Bánh mì & Ăn nhanh": ["Bánh mì", "Gà rán", "Pizza"],
+};
+
+export interface RestaurantWithDistance {
   id: string;
   name: string;
   address: string | null;
@@ -14,14 +27,29 @@ interface RestaurantWithDistance {
   longitude: number;
   rating: number | null;
   placeUrl: string | null;
-  dishTypes: DishType[];
+  imageUrl: string | null;
+  dishTypes: string[];
   distanceKm: number;
   hours: string | null;
+  priceLevel: number | null;
+  cuisineCategory: CuisineCategory;
 }
 
-const FRESHNESS_BBOX_DELTA = 0.07;
-const FRESHNESS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const FRESHNESS_MIN_COUNT = 20;
+const restaurantSelect = {
+  id: true,
+  name: true,
+  address: true,
+  city: true,
+  latitude: true,
+  longitude: true,
+  rating: true,
+  placeUrl: true,
+  imageUrl: true,
+  dishTypes: true,
+  hours: true,
+  priceLevel: true,
+  cuisineTag: true,
+} as const satisfies Record<string, true>;
 
 @Injectable()
 export class SuggestionsService {
@@ -30,38 +58,62 @@ export class SuggestionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly filtersService: FiltersService,
-    private readonly overpassService: OverpassService,
+    private readonly serpapiService: SerpapiService,
   ) {}
 
   async getSuggestions(userId: string, lat: number, lng: number, dishType?: DishType) {
     const filters = await this.filtersService.getFilters(userId);
 
-    const fresh = await this.isAreaFresh(lat, lng);
-    if (!fresh) {
-      const fetched = await this.overpassService.fetchAround(lat, lng);
-      if (fetched.length > 0) {
-        await this.bulkInsertRestaurants(fetched);
+    // Luôn thử SerpAPI trước — dữ liệu chi tiết hơn (rating, review, price, hours)
+    // Cooldown nội bộ (10s) bảo vệ khỏi spam API
+    const fetched = await this.serpapiService.searchNearby(lat, lng, filters.maxDistanceKm * 1000);
+    if (fetched.length > 0) {
+      await this.bulkInsertRestaurants(fetched);
+    }
+
+    let results: RestaurantWithDistance[];
+    if (dishType) {
+      results = await this.searchLocalByDish(dishType, lat, lng, filters.maxDistanceKm, filters.minRating);
+    } else {
+      results = await this.searchLocalAny(lat, lng, filters.maxDistanceKm, filters.minRating);
+      results = this.shuffle(results);
+    }
+
+    results = this.applyCuisineFilter(results, filters.cuisines as string[]);
+    results = this.applyPriceFilter(results, filters.priceRanges as string[]);
+
+    return results;
+  }
+
+  private applyCuisineFilter(results: RestaurantWithDistance[], selectedCuisines: string[]): RestaurantWithDistance[] {
+    if (!selectedCuisines || selectedCuisines.length === 0 || selectedCuisines.length === CUISINE_CATEGORIES.length) {
+      return results;
+    }
+
+    const expandedSelected = new Set<CuisineCategory>();
+    for (const selected of selectedCuisines) {
+      const asCategory = selected as CuisineCategory;
+      if (CUISINE_CATEGORIES.includes(asCategory)) {
+        expandedSelected.add(asCategory);
+        continue;
+      }
+
+      const aliases = CUISINE_FILTER_ALIASES[selected];
+      if (aliases) {
+        for (const alias of aliases) expandedSelected.add(alias);
       }
     }
 
-    if (dishType) {
-      return this.searchLocalByDish(dishType, lat, lng, filters.maxDistanceKm, filters.minRating);
-    }
-
-    const merged = await this.searchLocalAny(lat, lng, filters.maxDistanceKm, filters.minRating);
-    return this.shuffle(merged);
+    if (expandedSelected.size === 0) return results;
+    return results.filter((r) => expandedSelected.has(r.cuisineCategory));
   }
 
-  private async isAreaFresh(lat: number, lng: number): Promise<boolean> {
-    const since = new Date(Date.now() - FRESHNESS_TTL_MS);
-    const count = await this.prisma.restaurant.count({
-      where: {
-        latitude: { gte: lat - FRESHNESS_BBOX_DELTA, lte: lat + FRESHNESS_BBOX_DELTA },
-        longitude: { gte: lng - FRESHNESS_BBOX_DELTA, lte: lng + FRESHNESS_BBOX_DELTA },
-        lastSyncedAt: { gte: since },
-      },
-    });
-    return count >= FRESHNESS_MIN_COUNT;
+  private applyPriceFilter(results: RestaurantWithDistance[], selectedRanges: string[]): RestaurantWithDistance[] {
+    if (!selectedRanges || selectedRanges.length === 0 || selectedRanges.length === 4) {
+      return results;
+    }
+    const levels = selectedRanges.map((r) => PRICE_LEVEL_MAP[r]).filter((l): l is number => l != null);
+    return results.filter((r) => r.priceLevel == null || levels.includes(r.priceLevel));
   }
 
   private async bulkInsertRestaurants(items: OverpassRestaurant[]) {
@@ -71,10 +123,18 @@ export class SuggestionsService {
           placeId: item.id,
           name: item.name,
           address: item.address || null,
+          city: item.city ?? null,
           latitude: item.latitude,
           longitude: item.longitude,
-          placeUrl: `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`,
+          rating: item.rating ?? null,
+          userRatingsTotal: item.userRatingsTotal ?? 0,
+          hours: item.hours ?? null,
+          phone: item.phone ?? null,
+          placeUrl: item.placeUrl ?? `https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`,
+          imageUrl: item.imageUrl ?? null,
           dishTypes: item.dishTypes,
+          cuisineTag: item.cuisine,
+          priceLevel: item.priceLevel,
         })),
         skipDuplicates: true,
       });
@@ -109,6 +169,7 @@ export class SuggestionsService {
     const restaurants = await this.prisma.restaurant.findMany({
       where,
       orderBy: [{ rating: "desc" }, { userRatingsTotal: "desc" }],
+      select: restaurantSelect,
       take: 200,
     });
 
@@ -123,13 +184,13 @@ export class SuggestionsService {
   ) {
     const where: Prisma.RestaurantWhereInput = {
       OR: [{ rating: null }, { rating: { gte: minRating } }],
-      dishTypes: { isEmpty: false },
       ...this.bboxWhere(lat, lng, maxDistanceKm),
     };
 
     const restaurants = await this.prisma.restaurant.findMany({
       where,
       orderBy: [{ rating: "desc" }, { userRatingsTotal: "desc" }],
+      select: restaurantSelect,
       take: 400,
     });
 
@@ -155,8 +216,11 @@ export class SuggestionsService {
       longitude: number;
       rating: number | null;
       placeUrl: string | null;
+      imageUrl: string | null;
       dishTypes: DishType[];
       hours: string | null;
+      priceLevel: number | null;
+      cuisineTag: string | null;
     }>,
     lat: number,
     lng: number,
@@ -165,7 +229,19 @@ export class SuggestionsService {
   ) {
     const withDistance: RestaurantWithDistance[] = restaurants
       .map((restaurant) => ({
-        ...restaurant,
+        id: restaurant.id,
+        name: restaurant.name,
+        address: restaurant.address,
+        city: restaurant.city,
+        latitude: restaurant.latitude,
+        longitude: restaurant.longitude,
+        rating: restaurant.rating,
+        placeUrl: restaurant.placeUrl,
+        imageUrl: restaurant.imageUrl,
+        dishTypes: restaurant.dishTypes,
+        hours: restaurant.hours,
+        priceLevel: restaurant.priceLevel,
+        cuisineCategory: categorizeCuisine(restaurant.cuisineTag ?? restaurant.dishTypes[0] ?? null),
         distanceKm: this.getDistanceKm(lat, lng, restaurant.latitude, restaurant.longitude),
       }))
       .filter((restaurant) => restaurant.distanceKm <= maxDistanceKm)

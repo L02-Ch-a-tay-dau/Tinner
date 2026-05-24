@@ -1,11 +1,39 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { ChevronLeft, Check, Star, Navigation } from "lucide-react";
+import { ChevronLeft, Check, Navigation, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { authService, type User } from "../utils/auth";
 import { preferencesService, UserPreferences } from "../utils/preferences";
 import { Slider } from "../components/ui/slider";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
+
+const CUISINE_OPTIONS = [
+  "Quán vỉa hè",
+  "Cơm & Mì",
+  "Hải sản",
+  "Lẩu & Nướng",
+  "Đồ ăn Nhật Bản",
+  "Đồ ăn Hàn Quốc",
+  "Đồ ăn Trung Hoa",
+  "Đồ ăn Âu",
+  "Cafe",
+  "Trà sữa",
+  "Bánh mì",
+  "Gà rán",
+  "Pizza",
+  "Phở",
+  "Bún",
+  "Bánh xèo",
+  "Bánh cuốn",
+  "Bánh canh",
+  "Bánh bèo",
+  "Chay",
+  "Khác",
+];
+
+function formatVnd(value: number): string {
+  return value.toLocaleString("vi-VN");
+}
 
 export default function FiltersScreen() {
   const navigate = useNavigate();
@@ -13,35 +41,22 @@ export default function FiltersScreen() {
   const [preferences, setPreferences] = useState<UserPreferences>(
     preferencesService.getPreferences()
   );
+  const [saving, setSaving] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
     setUser(authService.getCurrentUser());
+
+    // Try to load from API on mount
+    if (authService.isAuthenticated()) {
+      preferencesService.loadFromApi().then((apiPrefs) => {
+        if (apiPrefs) setPreferences(apiPrefs);
+        setInitialLoading(false);
+      }).catch(() => setInitialLoading(false));
+    } else {
+      setInitialLoading(false);
+    }
   }, []);
-
-  const cuisineOptions = [
-    "American",
-    "Japanese",
-    "Italian",
-    "Thai",
-    "Mexican",
-    "Indian",
-    "Steakhouse",
-    "Chinese",
-    "French",
-    "Mediterranean",
-  ];
-
-  const dietaryOptions = [
-    "Vegetarian",
-    "Vegan",
-    "Gluten-Free",
-    "Halal",
-    "Kosher",
-    "Dairy-Free",
-    "Nut-Free",
-  ];
-
-  const priceOptions = ["$", "$$", "$$$", "$$$$"];
 
   const toggleCuisine = (cuisine: string) => {
     setPreferences((prev) => ({
@@ -52,40 +67,39 @@ export default function FiltersScreen() {
     }));
   };
 
-  const toggleDietary = (restriction: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      dietaryRestrictions: prev.dietaryRestrictions.includes(restriction)
-        ? prev.dietaryRestrictions.filter((r) => r !== restriction)
-        : [...prev.dietaryRestrictions, restriction],
-    }));
-  };
-
-  const togglePrice = (price: string) => {
-    setPreferences((prev) => ({
-      ...prev,
-      priceRange: prev.priceRange.includes(price)
-        ? prev.priceRange.filter((p) => p !== price)
-        : [...prev.priceRange, price],
-    }));
-  };
-
-  const handleSave = () => {
-    preferencesService.savePreferences(preferences);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await preferencesService.saveToApi(preferences);
+    } catch { /* silent */ }
+    setSaving(false);
     navigate("/");
   };
 
   const handleReset = () => {
     const defaultPrefs: UserPreferences = {
       cuisines: [],
-      dietaryRestrictions: [],
-      priceRange: ["$", "$$", "$$$", "$$$$"],
+      priceVndMin: 0,
+      priceVndMax: 1000000,
       maxDistance: 5,
       minRating: 0,
     };
     setPreferences(defaultPrefs);
     preferencesService.savePreferences(defaultPrefs);
   };
+
+  const priceSubtitle =
+    preferences.priceVndMin <= 0 && preferences.priceVndMax >= 1000000
+      ? "Tất cả mức giá"
+      : `${formatVnd(preferences.priceVndMin)}₫ – ${formatVnd(preferences.priceVndMax)}₫`;
+
+  if (initialLoading) {
+    return (
+      <div className="flex flex-col flex-1 items-center justify-center">
+        <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col flex-1 px-4 pb-20">
@@ -144,6 +158,7 @@ export default function FiltersScreen() {
             </div>
           </div>
         </div>
+
         {/* Cuisines */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -151,14 +166,14 @@ export default function FiltersScreen() {
           transition={{ delay: 0.1 }}
           className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm"
         >
-          <h3 className="text-gray-900 mb-3">Cuisines</h3>
+          <h3 className="text-gray-900 mb-3">Loại quán</h3>
           <p className="text-gray-500 text-sm mb-4">
             {preferences.cuisines.length === 0
-              ? "All cuisines included"
-              : `${preferences.cuisines.length} selected`}
+              ? "Tất cả"
+              : `${preferences.cuisines.length} loại`}
           </p>
           <div className="flex flex-wrap gap-2">
-            {cuisineOptions.map((cuisine) => {
+            {CUISINE_OPTIONS.map((cuisine) => {
               const isSelected = preferences.cuisines.includes(cuisine);
               return (
                 <button
@@ -178,70 +193,43 @@ export default function FiltersScreen() {
           </div>
         </motion.div>
 
-        {/* Dietary Restrictions */}
+        {/* Price Range */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
           className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm"
         >
-          <h3 className="text-gray-900 mb-3">Dietary Preferences</h3>
-          <p className="text-gray-500 text-sm mb-4">
-            {preferences.dietaryRestrictions.length === 0
-              ? "No restrictions"
-              : `${preferences.dietaryRestrictions.length} selected`}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {dietaryOptions.map((dietary) => {
-              const isSelected = preferences.dietaryRestrictions.includes(dietary);
-              return (
-                <button
-                  key={dietary}
-                  onClick={() => toggleDietary(dietary)}
-                  className={`px-4 py-2 rounded-xl text-sm transition-all ${
-                    isSelected
-                      ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
-                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {isSelected && <Check className="w-3 h-3 inline mr-1" />}
-                  {dietary}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Price Range */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm"
-        >
-          <h3 className="text-gray-900 mb-3">Price Range</h3>
-          <p className="text-gray-500 text-sm mb-4">
-            {preferences.priceRange.length === 4
-              ? "All prices"
-              : preferences.priceRange.join(", ")}
-          </p>
-          <div className="flex gap-3">
-            {priceOptions.map((price) => {
-              const isSelected = preferences.priceRange.includes(price);
-              return (
-                <button
-                  key={price}
-                  onClick={() => togglePrice(price)}
-                  className={`flex-1 py-3 rounded-xl text-sm transition-all ${
-                    isSelected
-                      ? "bg-blue-500 text-white shadow-md shadow-blue-200"
-                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {price}
-                </button>
-              );
-            })}
+          <h3 className="text-gray-900 mb-3">Khoảng giá</h3>
+          <p className="text-gray-500 text-sm mb-4">{priceSubtitle}</p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              placeholder="0"
+              className="flex-1 h-11 rounded-xl bg-gray-50 border border-gray-200 px-3 text-sm font-bold text-gray-900"
+              value={preferences.priceVndMin > 0 ? preferences.priceVndMin : ""}
+              onChange={(e) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  priceVndMin: Number(e.target.value) || 0,
+                }))
+              }
+            />
+            <span className="text-gray-400 text-sm font-bold">₫</span>
+            <span className="text-gray-300 text-lg font-bold">–</span>
+            <input
+              type="number"
+              placeholder="1.000.000"
+              className="flex-1 h-11 rounded-xl bg-gray-50 border border-gray-200 px-3 text-sm font-bold text-gray-900"
+              value={preferences.priceVndMax < 1000000 ? preferences.priceVndMax : ""}
+              onChange={(e) =>
+                setPreferences((prev) => ({
+                  ...prev,
+                  priceVndMax: Number(e.target.value) || 0,
+                }))
+              }
+            />
+            <span className="text-gray-400 text-sm font-bold">₫</span>
           </div>
         </motion.div>
 
@@ -249,7 +237,7 @@ export default function FiltersScreen() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.3 }}
           className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm"
         >
           <div className="flex items-center justify-between mb-4">
@@ -277,41 +265,6 @@ export default function FiltersScreen() {
             <span>10 km</span>
           </div>
         </motion.div>
-
-        {/* Minimum Rating */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-gray-900">Minimum Rating</h3>
-              <p className="text-gray-500 text-sm mt-1">Only show highly rated places</p>
-            </div>
-            <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-xl">
-              <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span className="text-amber-600">
-                {preferences.minRating === 0 ? "Any" : preferences.minRating.toFixed(1)}
-              </span>
-            </div>
-          </div>
-          <Slider
-            value={[preferences.minRating]}
-            onValueChange={([value]) =>
-              setPreferences((prev) => ({ ...prev, minRating: value }))
-            }
-            min={0}
-            max={5}
-            step={0.5}
-            className="mt-2"
-          />
-          <div className="flex justify-between text-xs text-gray-400 mt-2">
-            <span>Any</span>
-            <span>5.0</span>
-          </div>
-        </motion.div>
       </div>
 
       {/* Save Button */}
@@ -319,9 +272,11 @@ export default function FiltersScreen() {
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={handleSave}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl transition-colors shadow-lg shadow-orange-200 pointer-events-auto"
+          disabled={saving}
+          className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-4 rounded-2xl transition-colors shadow-lg shadow-orange-200 pointer-events-auto flex items-center justify-center gap-2"
         >
-          Save Preferences
+          {saving && <Loader2 className="w-5 h-5 animate-spin" />}
+          {saving ? "Saving..." : "Save Preferences"}
         </motion.button>
       </div>
     </div>

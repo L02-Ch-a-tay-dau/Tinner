@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router";
-import { Utensils, Mail, Lock } from "lucide-react";
+import { Utensils, Mail, Lock, Loader2 } from "lucide-react";
 import { authService } from "../utils/auth";
+import { fetchFilters } from "../utils/api";
 import { motion } from "motion/react";
 
 export default function Login() {
@@ -9,22 +10,25 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const user = authService.login(email, password);
-    if (user) {
-      navigate("/");
-    } else {
-      setError("Invalid email or password");
+    try {
+      const user = await authService.login(email, password);
+      if (user) {
+        navigate("/");
+      } else {
+        setError("Invalid email or password");
+      }
+    } catch {
+      setError("Connection failed. Is the backend running?");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleGuestLogin = () => {
-    authService.loginAsGuest();
-    navigate("/");
   };
 
   return (
@@ -66,6 +70,7 @@ export default function Login() {
                 placeholder="you@example.com"
                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -81,6 +86,7 @@ export default function Login() {
                 placeholder="••••••••"
                 className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 required
+                disabled={loading}
               />
             </div>
           </div>
@@ -88,40 +94,20 @@ export default function Login() {
           <motion.button
             whileTap={{ scale: 0.98 }}
             type="submit"
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-2xl transition-colors shadow-lg shadow-orange-200"
+            disabled={loading}
+            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-3 rounded-2xl transition-colors shadow-lg shadow-orange-200 flex items-center justify-center gap-2"
           >
-            Log In
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            {loading ? "Logging in..." : "Log In"}
           </motion.button>
         </form>
-        <div className="mt-6 flex items-center justify-center">
-          <div className="h-px bg-gray-200 flex-1"></div>
-          <span className="px-4 text-xs text-gray-400 uppercase tracking-wider">Or</span>
-          <div className="h-px bg-gray-200 flex-1"></div>
-        </div>
 
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          type="button"
-          onClick={handleGuestLogin}
-          className="w-full mt-6 bg-white hover:bg-gray-50 text-gray-700 py-3 rounded-2xl border border-gray-200 transition-colors shadow-sm"
-        >
-          Quick Login as Guest
-        </motion.button>
-
-        {/* Sign up link */}
         <p className="text-center text-gray-600 text-sm mt-6">
           Don't have an account?{" "}
           <Link to="/signup" className="text-orange-500 hover:text-orange-600 transition-colors">
             Sign Up
           </Link>
         </p>
-
-        {/* Demo credentials */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-2xl p-4">
-          <p className="text-blue-900 text-xs">
-            <strong>Demo:</strong> Create an account or use any email/password combination you create
-          </p>
-        </div>
       </motion.div>
     </div>
   );

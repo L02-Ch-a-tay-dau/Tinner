@@ -62,6 +62,7 @@ export class InteractionsService {
         restaurant: true,
       },
       orderBy: { createdAt: "desc" },
+      take: 100,
     });
 
     return interactions

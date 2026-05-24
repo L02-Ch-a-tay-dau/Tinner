@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FoodSwipeCard } from "../components/FoodSwipeCard";
 import { RestaurantPanel } from "../components/RestaurantPanel";
 import { colors, sharedStyles, shadow, spacing } from "../theme";
-import { GUEST_USER_EMAIL, type NativeFood, type UserProfile } from "../types";
+import { type NativeFood, type UserProfile } from "../types";
 
 interface SwipeScreenProps {
   deck: NativeFood[];
@@ -40,7 +40,6 @@ export function SwipeScreen({
   const secondFood = deck.at(-2);
   const thirdFood = deck.at(-3);
   const swipeEnabled = !selectedFood;
-  const isGuest = user?.email === GUEST_USER_EMAIL;
   const cardHeight = Math.min(520, Math.max(340, Math.round(windowHeight * 0.54)));
   const screenWithNavStyle = {
     paddingBottom: spacing.navHeight + Math.max(12, insets.bottom + 8),
@@ -86,19 +85,7 @@ export function SwipeScreen({
             </View>
           ) : deck.length === 0 ? (
             <View style={styles.emptyCard}>
-              {isGuest ? (
-                <>
-                  <Text style={styles.emptyEmoji}>🗺️</Text>
-                  <Text style={styles.emptyTitle}>Map suggestions</Text>
-                  <Text style={styles.emptyText}>
-                    Sign in to load nearby restaurants from your location (backend map / places data). Guest mode
-                    does not call the suggestions API.
-                  </Text>
-                  <Pressable style={styles.startOverButton} onPress={onLogout}>
-                    <Text style={styles.startOverText}>Sign in</Text>
-                  </Pressable>
-                </>
-              ) : likedCount === 0 && skippedCount === 0 ? (
+              {likedCount === 0 && skippedCount === 0 ? (
                 <>
                   <Text style={styles.emptyEmoji}>📍</Text>
                   <Text style={styles.emptyTitle}>No nearby places</Text>
