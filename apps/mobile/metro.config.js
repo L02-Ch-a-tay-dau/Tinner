@@ -1,17 +1,14 @@
-const { getDefaultConfig } = require("expo/metro-config"); // Giữ lại để reference nếu cần hoặc dùng trực tiếp từ sentry
-const { getSentryExpoConfig } = require("@sentry/react-native/metro");
+const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
 
 const projectRoot = __dirname;
-const workspaceRoot = path.resolve(projectRoot, "../.."); // Giả định theo logic bên trái của bạn
+const workspaceRoot = path.resolve(projectRoot, "../..");
 
-// Mix: Dùng hàm của Sentry nhưng truyền projectRoot vào
-const config = getSentryExpoConfig(projectRoot);
+const config = getDefaultConfig(projectRoot);
 
-// Giữ lại các cấu hình Monorepo/Workspace từ nhánh Incoming
+// IMPORTANT: Metro needs to watch the workspace root to resolve hoisted modules
 config.watchFolders = [
-  projectRoot,
-  path.resolve(workspaceRoot, "node_modules"),
+  workspaceRoot,
 ];
 
 config.resolver.nodeModulesPaths = [
@@ -24,6 +21,7 @@ config.resolver.unstable_enablePackageExports = true;
 
 config.resolver.blockList = [
   /[\\/]apps[\\/]backend[\\/]dist[\\/].*/,
+  /[\\/]\.bin[\\/].*/,
 ];
 
 module.exports = config;

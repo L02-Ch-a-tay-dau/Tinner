@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
 import { colors, shadow, sharedStyles, spacing } from "../theme";
 // 1. Import Sentry
 import * as Sentry from '@sentry/react-native';
@@ -41,19 +41,18 @@ export function LoginScreen({
     <View style={styles.screen}>
       <View style={styles.card}>
         <View style={styles.logoWrap}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>⌘</Text>
-          </View>
+          <Image source={require("../../assets/tinner_logo.png")} style={styles.logo} />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Log in to continue swiping</Text>
         </View>
-        {/* Nút Test Sentry (Thêm mới vào đây) */}
+        {/* Nút Test Sentry (Đã ẩn đi)
         <Pressable 
-          style={[styles.guestButton, { borderColor: colors.orange, marginTop: 10 }]} 
+          style={[styles.debugButton, { borderColor: colors.orange, marginTop: 10 }]} 
           onPress={handleTestSentry}
         >
-          <Text style={[styles.guestText, { color: colors.orange }]}>🛠 Debug: Trigger Sentry Error</Text>
+          <Text style={[styles.debugText, { color: colors.orange }]}>🛠 Debug: Trigger Sentry Error</Text>
         </Pressable>
+        */}
 
         {!!error && <Text style={sharedStyles.error}>{error}</Text>}
 
@@ -119,14 +118,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   logo: {
-    width: 64,
-    height: 64,
-    borderRadius: spacing.radius2xl,
-    backgroundColor: colors.orange,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
     marginBottom: 16,
-    ...shadow.soft,
   },
   logoText: {
     color: colors.white,
@@ -182,7 +177,7 @@ const styles = StyleSheet.create({
     color: colors.orange,
     fontWeight: "700",
   },
-  guestButton: {
+  debugButton: {
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
@@ -191,7 +186,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     ...shadow.soft,
   },
-  guestText: {
+  debugText: {
     color: "#374151",
     fontSize: 15,
     fontWeight: "700",

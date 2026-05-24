@@ -11,6 +11,8 @@ datasource db {
   provider = "postgresql"
 }
 
+
+
 enum DishType {
   bun_bo     @map("bun bo")
   bun_dau    @map("bun dau")

@@ -9,7 +9,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://your-render-service.onrender.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://edc5c995ba84a8.lhr.life"
       }
     },
     "production": {
