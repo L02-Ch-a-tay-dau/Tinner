@@ -1,9 +1,9 @@
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./common/filters/http-exception.filter";
+import { setupSwaggerUi } from "./swagger-document";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -22,14 +22,7 @@ async function bootstrap() {
     }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle("Tinner API")
-    .setDescription("REST API documentation for the Tinner backend")
-    .setVersion("1.0")
-    .addBearerAuth()
-    .build();
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup("api/docs", app, swaggerDocument);
+  setupSwaggerUi(app);
 
   await app.listen(process.env.PORT ?? 3000);
 }

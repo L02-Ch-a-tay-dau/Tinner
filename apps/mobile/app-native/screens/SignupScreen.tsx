@@ -102,7 +102,7 @@ export function SignupScreen({
 
         <View style={styles.field}>
           <Text style={styles.label}>
-            Full Name <Text style={styles.optionalHint}>(optional)</Text>
+            Full Name
           </Text>
           <View style={styles.inputWrap}>
             <Text style={styles.inputIcon}>☺</Text>

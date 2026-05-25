@@ -55,7 +55,7 @@ export function validateSignup(values: SignupFormValues): string | null {
     return "Mật khẩu phải có ít nhất 8 ký tự";
   }
   if (!PASSWORD_RE.test(values.password)) {
-    return "Mật khẩu phải có ít nhất một chữ cái và một chữ số";
+    return "Mật khẩu phải có ít nhất một chữ số";
   }
 
   if (!values.confirmPassword) {

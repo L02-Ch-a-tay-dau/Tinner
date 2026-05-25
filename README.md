@@ -56,6 +56,12 @@ pnpm dev:mobile
 
 Set `EXPO_PUBLIC_API_BASE_URL` in `apps/mobile/.env` if your API host is not `http://10.0.2.2:3000`.
 
+## API documentation
+
+- **OpenAPI spec (YAML):** [`docs/openapi.yaml`](docs/openapi.yaml) — regenerate after API changes with `pnpm openapi:generate` (no database required).
+- **Swagger UI:** with backend running, open [http://localhost:3000/api/docs](http://localhost:3000/api/docs).
+- See [`docs/README.md`](docs/README.md) for endpoint overview.
+
 ## Docker scripts
 
 - Start full local stack (Postgres + Backend): `pnpm docker:up`

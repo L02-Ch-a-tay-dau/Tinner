@@ -1,13 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, shadow, spacing } from "../theme";
+import { colors } from "../theme";
 import type { ScreenName } from "../types";
 import { Ionicons } from '@expo/vector-icons'; 
 
 // 1. Định nghĩa bộ icon mới: Đậm hơn và phù hợp với vibe "Tinner"
 const tabs: Array<{ screen: ScreenName; label: string; icon: any; activeIcon: any }> = [
-  { screen: "swipe", label: "Swipe", icon: "flame-outline", activeIcon: "flame" }, // Dùng icon ngọn lửa cho vibe "hot/trending"
-  { screen: "map", label: "Map", icon: "location-outline", activeIcon: "location" },
+  { screen: "swipe", label: "Swipe", icon: "flame-outline", activeIcon: "flame" },
   { screen: "collections", label: "Saved", icon: "heart-outline", activeIcon: "heart" },
   { screen: "filters", label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
