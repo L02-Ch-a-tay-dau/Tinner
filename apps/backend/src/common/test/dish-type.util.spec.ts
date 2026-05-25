@@ -26,13 +26,13 @@ describe("dishType util", () => {
       expect(dishTypeFromApiValue("bun rieu cua")).toBe("bun_rieu");
     });
 
-    it("returns the input string with underscores if no match is found", () => {
-      expect(dishTypeFromApiValue("unknown dish")).toBe("unknown_dish");
+    it("returns undefined if no match is found", () => {
+      expect(dishTypeFromApiValue("unknown dish")).toBeUndefined();
     });
 
-    it("returns non-string values as-is", () => {
-      expect(dishTypeFromApiValue(123 as any)).toBe(123);
-      expect(dishTypeFromApiValue(null as any)).toBe(null);
+    it("returns undefined for non-string values", () => {
+      expect(dishTypeFromApiValue(123 as any)).toBeUndefined();
+      expect(dishTypeFromApiValue(null as any)).toBeUndefined();
     });
   });
 });
