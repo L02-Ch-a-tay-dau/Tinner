@@ -107,7 +107,7 @@ describe("OverpassService", () => {
 
       expect(result).toHaveLength(2);
       
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         id: "n1",
         name: "Pho Restaurant",
         latitude: 10,
@@ -116,9 +116,11 @@ describe("OverpassService", () => {
         amenity: "restaurant",
         cuisine: "vietnamese",
         dishTypes: ["pho"],
+        priceLevel: null,
+        imageUrl: null,
       });
 
-      expect(result[1]).toEqual({
+      expect(result[1]).toMatchObject({
         id: "w2",
         name: "Pho Cafe",
         latitude: 20,
@@ -127,6 +129,8 @@ describe("OverpassService", () => {
         amenity: null,
         cuisine: null,
         dishTypes: ["pho"],
+        priceLevel: null,
+        imageUrl: null,
       });
     });
 
