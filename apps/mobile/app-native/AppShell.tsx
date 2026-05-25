@@ -242,9 +242,20 @@ export function AppShell() {
     setLikedFood(null);
   };
 
+  const resolveReturnScreen = (from: ScreenName): ScreenName =>
+    from === "map" ? "swipe" : from;
+
   const openPreferences = (from: ScreenName) => {
-    setPreferencesReturnScreen(from);
+    setPreferencesReturnScreen(resolveReturnScreen(from));
     setScreen("preferences");
+  };
+
+  const handleTabChange = (next: ScreenName) => {
+    if (next === "map") {
+      setScreen("swipe");
+      return;
+    }
+    setScreen(next);
   };
 
   const savePreferences = async () => {
@@ -260,7 +271,7 @@ export function AppShell() {
       setDeck([]);
     }
     setSaving(false);
-    setScreen(preferencesReturnScreen);
+    setScreen(resolveReturnScreen(preferencesReturnScreen));
   };
 
   const removeSavedFood = (foodId: string) => {
@@ -427,7 +438,7 @@ export function AppShell() {
           />
         )}
 
-        <BottomTabs active={screen} onChange={setScreen} />
+        <BottomTabs active={screen === "map" ? "swipe" : screen} onChange={handleTabChange} />
       </View>
     </View>
   );

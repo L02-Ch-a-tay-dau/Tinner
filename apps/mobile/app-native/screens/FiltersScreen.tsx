@@ -35,7 +35,7 @@ interface PillGroupProps {
   onToggle: (item: string) => void;
 }
 
-function PillGroup({ title, subtitle, items, selected, color, onToggle }: PillGroupProps) {
+function PillGroup({ title, subtitle, items, selected, color, onToggle }: Readonly<PillGroupProps>) {
   const activeColor = color === "orange" ? colors.orange : colors.green;
   const activeSoft = color === "orange" ? colors.orangeSoft : colors.greenSoft;
   return (
@@ -72,7 +72,7 @@ function formatVnd(value: number): string {
 }
 
 function parseVnd(text: string): number {
-  return Number(text.replaceAll(/[^0-9]/g, "")) || 0;
+  return Number(text.replaceAll(/\D/g, "")) || 0;
 }
 
 export function FiltersScreen({
@@ -82,8 +82,10 @@ export function FiltersScreen({
   onChangePreferences,
   onReset,
   onSave,
-}: FiltersScreenProps) {
+}: Readonly<FiltersScreenProps>) {
   const insets = useSafeAreaInsets();
+  const navClearance = spacing.navHeight + Math.max(12, insets.bottom + 8);
+  const ctaScrollPadding = navClearance + 24;
   const reset = () => {
     onChangePreferences(defaultPreferences);
     onReset();
@@ -96,11 +98,8 @@ export function FiltersScreen({
 
   return (
     <KeyboardAvoidingView
-      style={[
-        sharedStyles.screen,
-        { paddingBottom: spacing.navHeight + Math.max(12, insets.bottom + 8) },
-      ]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={[sharedStyles.screen, styles.root]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={insets.top}
     >
       <View style={styles.header}>
@@ -114,7 +113,8 @@ export function FiltersScreen({
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        style={styles.scroll}
+        contentContainerStyle={[styles.content, { paddingBottom: ctaScrollPadding }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -192,7 +192,7 @@ export function FiltersScreen({
               style={styles.stepperButton}
               onPress={() => {
                 const currentVal = preferences.minRating ?? 0;
-                const nextVal = Math.max(0, parseFloat((currentVal - 0.5).toFixed(1)));
+                const nextVal = Math.max(0, Number.parseFloat((currentVal - 0.5).toFixed(1)));
                 onChangePreferences({ ...preferences, minRating: nextVal });
               }}
             >
@@ -207,7 +207,7 @@ export function FiltersScreen({
               style={styles.stepperButton}
               onPress={() => {
                 const currentVal = preferences.minRating ?? 0;
-                const nextVal = Math.min(5, parseFloat((currentVal + 0.5).toFixed(1)));
+                const nextVal = Math.min(5, Number.parseFloat((currentVal + 0.5).toFixed(1)));
                 onChangePreferences({ ...preferences, minRating: nextVal });
               }}
             >
@@ -229,6 +229,12 @@ export function FiltersScreen({
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
   header: {
     ...sharedStyles.header,
   },

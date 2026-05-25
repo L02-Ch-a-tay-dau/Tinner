@@ -248,7 +248,7 @@ function pickDishType(restaurant: RestaurantDto, fallback?: string): string {
 export async function getSuggestionsFromApi(token: string, dishType?: string) {
   if (!cachedDishMap) {
     try {
-      const dishes = await request<DishDto[]>("/api/v1/dishes");
+      const dishes = await request<DishDto[]>("/api/v1/dishes", token);
       cachedDishMap = buildDishMap(dishes);
     } catch {
       cachedDishMap = {};

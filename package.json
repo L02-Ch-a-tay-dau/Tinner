@@ -13,7 +13,8 @@
     "deploy:apk": "pnpm --filter @tinner/mobile apk:build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "docs:build": "cd latex && pdflatex -interaction=nonstopmode main.tex"
+    "docs:build": "cd latex && pdflatex -interaction=nonstopmode main.tex",
+    "openapi:generate": "pnpm --filter @tinner/backend openapi:generate"
   },
   "pnpm": {
     "overrides": {

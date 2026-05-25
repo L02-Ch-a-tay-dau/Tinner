@@ -1,0 +1,188 @@
+openapi: 3.0.0
+paths:
+  /api/v1/health:
+    get:
+      description: Returns service status. No authentication required.
+      operationId: HealthController_getHealth
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: Health check
+      tags:
+        - health
+  /api/v1/auth/register:
+    post:
+      description: Create account and return access + refresh tokens.
+      operationId: AuthController_register
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      summary: Register
+      tags: &ref_0
+        - auth
+  /api/v1/auth/login:
+    post:
+      description: Authenticate with email and password.
+      operationId: AuthController_login
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      summary: Login
+      tags: *ref_0
+  /api/v1/auth/refresh:
+    post:
+      description: Exchange a valid refresh token for new access and refresh tokens.
+      operationId: AuthController_refresh
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      summary: Refresh tokens
+      tags: *ref_0
+  /api/v1/auth/logout:
+    post:
+      description: Revoke refresh token for the current user.
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      security:
+        - access-token: []
+      summary: Logout
+      tags: *ref_0
+  /api/v1/auth/me:
+    get:
+      description: Return profile for the authenticated user.
+      operationId: AuthController_me
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security:
+        - access-token: []
+      summary: Current user
+      tags: *ref_0
+  /api/v1/dishes:
+    get:
+      description: Return all Vietnamese dish types supported by suggestions.
+      operationId: DishesController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security:
+        - access-token: []
+      summary: List dishes
+      tags:
+        - dishes
+  /api/v1/interactions/like:
+    post:
+      description: Record a positive swipe interaction for a dish type.
+      operationId: InteractionsController_likeDish
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      security: &ref_1
+        - access-token: []
+      summary: Like a dish
+      tags: &ref_2
+        - interactions
+  /api/v1/interactions/save:
+    post:
+      description: Add a restaurant to the user's saved collection.
+      operationId: InteractionsController_saveRestaurant
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      security: *ref_1
+      summary: Save restaurant
+      tags: *ref_2
+  /api/v1/interactions/saved:
+    get:
+      description: Return all restaurants saved by the user.
+      operationId: InteractionsController_getSaved
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security: *ref_1
+      summary: List saved restaurants
+      tags: *ref_2
+  /api/v1/interactions/saved/{id}:
+    delete:
+      description: Delete one saved restaurant by interaction id.
+      operationId: InteractionsController_deleteSaved
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: Saved interaction UUID
+          schema:
+            format: uuid
+      responses:
+        '200':
+          description: ''
+      security: *ref_1
+      summary: Remove saved restaurant
+      tags: *ref_2
+  /api/v1/filters:
+    get:
+      description: Return cuisine, distance, price, and rating preferences.
+      operationId: FiltersController_getFilters
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security: &ref_3
+        - access-token: []
+      summary: Get user filters
+      tags: &ref_4
+        - filters
+    put:
+      description: Persist filter preferences used by suggestions.
+      operationId: FiltersController_updateFilters
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security: *ref_3
+      summary: Update user filters
+      tags: *ref_4
+  /api/v1/suggestions:
+    get:
+      description: Fetch restaurants near lat/lng, optionally filtered by dish type and user preferences. May ingest from SerpAPI.
+      operationId: SuggestionsController_getSuggestions
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      security:
+        - access-token: []
+      summary: Nearby restaurant suggestions
+      tags:
+        - suggestions
+info:
+  title: Tinner API
+  description: >-
+    REST API for Tinner — auth, dish suggestions, filters, and saved restaurants. Most routes require JWT Bearer token
+    unless marked public.
+  version: '1.0'
+  contact: {}
+tags: []
+servers:
+  - url: http://localhost:3000
+    description: Local development
+components:
+  securitySchemes:
+    access-token:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+      description: Access token from POST /api/v1/auth/login or /register
+  schemas: {}
