@@ -113,6 +113,7 @@ describe("InteractionsController (e2e)", () => {
         {
           id: "int-1",
           dishType: "pho",
+          createdAt: new Date("2026-05-25T08:00:00.000Z"),
           restaurant: { id: "r1", name: "Pho 1", dishTypes: ["pho"] },
         },
       ];

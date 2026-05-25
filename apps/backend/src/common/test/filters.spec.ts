@@ -48,8 +48,9 @@ describe("GlobalExceptionFilter", () => {
 
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Validation failed",
+        message: "email is invalid",
         details: responseBody.message,
+        error: "Bad Request",
       }),
     );
   });
