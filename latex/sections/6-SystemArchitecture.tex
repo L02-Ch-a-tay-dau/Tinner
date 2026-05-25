@@ -1,5 +1,58 @@
-\section{System Architecture}
-\label{sec:system_architecture}
+\section{Sơ đồ kiến trúc hệ thống}
 
-\subsection{Architecture Overview}
-% Diagram and explain the overall architecture, including frontend, backend, database, and integrations.
+\subsection{Mô tả kiến trúc tổng quan}
+
+Kiến trúc hiện tại gồm ba lớp chính và một tích hợp dữ liệu bên ngoài:
+
+\begin{itemize}
+  \item \textbf{Client layer}: mobile app Expo/React Native là kênh chính; web tham chiếu là thành phần phụ trợ.
+  \item \textbf{API layer}: NestJS backend cung cấp REST API \texttt{/api/v1/*} với guard JWT toàn cục, validation và error handling thống nhất.
+  \item \textbf{Data layer}: PostgreSQL (Aiven trên môi trường cloud, Postgres container ở local), truy cập qua Prisma.
+  \item \textbf{External data}: SerpAPI (Google Maps engine) để lấy danh sách địa điểm ăn uống gần user theo toạ độ.
+\end{itemize}
+
+\subsection{Sơ đồ kiến trúc (Mermaid)}
+
+\begin{lstlisting}[frame=single]
+flowchart TB
+  subgraph Clients
+    Mobile[Expo React Native app]
+    WebRef[Optional web reference]
+  end
+
+  subgraph Backend[NestJS Backend on Render]
+    API[REST API /api/v1/*]
+    Guard[JWT Auth Guard]
+    Filter[GlobalExceptionFilter + ValidationPipe]
+    Auth[Auth Module]
+    Domain[Dishes / Filters / Interactions]
+    Suggest[Suggestions Module]
+    Prisma[Prisma ORM]
+  end
+
+  DB[(PostgreSQL)]
+  SerpAPI[SerpAPI Google Maps]
+
+  Mobile --> API
+  WebRef --> API
+  API --> Guard
+  API --> Filter
+  Guard --> Auth
+  Guard --> Domain
+  Guard --> Suggest
+  Auth --> Prisma
+  Domain --> Prisma
+  Suggest --> Prisma
+  Prisma --> DB
+  Suggest -.fetch nearby places.-> SerpAPI
+\end{lstlisting}
+
+\subsection{Luồng xử lý \texttt{/suggestions}}
+
+\begin{enumerate}
+  \item Mobile gửi \texttt{lat}, \texttt{lng}, và có thể có \texttt{dishType}.
+  \item Backend đọc bộ lọc user từ \texttt{user\_filters}.
+  \item \texttt{SuggestionsService} thử gọi SerpAPI (nếu cấu hình API key) và đồng bộ dữ liệu mới vào DB.
+  \item Service truy vấn DB theo dish/mixed mode, lọc theo rating, khoảng cách, cuisine, price.
+  \item Kết quả được chuẩn hoá về payload restaurant và trả cho client để render thẻ swipe.
+\end{enumerate}

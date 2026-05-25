@@ -1,4 +1,4 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FoodSwipeCard } from "../components/FoodSwipeCard";
 import { RestaurantPanel } from "../components/RestaurantPanel";
@@ -48,28 +48,17 @@ export function SwipeScreen({
   return (
     <View style={[sharedStyles.screen, screenWithNavStyle]}>
       <View style={styles.header}>
-        <View>
-          <View style={styles.brandRow}>
-            <View style={styles.brandIcon}>
-              <Text style={styles.brandIconText}>⌘</Text>
-            </View>
+        <View style={styles.brandRow}>
+          <Image source={require("../../assets/tinner_logo.png")} style={styles.brandLogo} />
+          <View style={styles.brandTextColumn}>
             <Text style={styles.brandTitle}>Tinner</Text>
+            <Text style={styles.brandSub}>Find your next craving</Text>
           </View>
-          <Text style={styles.brandSub}>Find your next craving</Text>
         </View>
 
         <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: "#f87171" }]}>{skippedCount}</Text>
-            <Text style={styles.statLabel}>skipped</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={[styles.statValue, { color: colors.green }]}>{likedCount}</Text>
-            <Text style={styles.statLabel}>liked</Text>
-          </View>
-          <Pressable style={styles.userButton} onPress={onLogout}>
-            <Text style={styles.userIcon}>{(user?.name ?? "G").slice(0, 1).toUpperCase()}</Text>
+          <Pressable style={styles.logoutButton} onPress={onLogout}>
+            <Text style={styles.logoutIcon}>⇥</Text>
           </Pressable>
         </View>
       </View>
@@ -151,17 +140,9 @@ export function SwipeScreen({
 
         {deck.length > 0 && !loading && (
           <>
-            <View style={styles.remainingRow}>
-              <Text style={styles.remainingText}>
-                ✨ {deck.length} place{deck.length !== 1 ? "s" : ""} remaining
-              </Text>
-            </View>
             <View style={styles.actions}>
               <Pressable style={styles.actionButton} onPress={onSwipeLeft} disabled={!swipeEnabled}>
                 <Text style={[styles.actionIcon, { color: colors.red }]}>×</Text>
-              </Pressable>
-              <Pressable style={styles.resetButton} onPress={onReset} disabled={!swipeEnabled}>
-                <Text style={styles.resetText}>↻</Text>
               </Pressable>
               <Pressable style={styles.actionButton} onPress={onSwipeRight} disabled={!swipeEnabled}>
                 <Text style={[styles.actionIcon, { color: colors.green }]}>♥</Text>
@@ -189,29 +170,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  brandIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: colors.orange,
-    alignItems: "center",
-    justifyContent: "center",
+  brandLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    resizeMode: "contain",
   },
-  brandIconText: {
-    color: colors.white,
-    fontWeight: "900",
-    fontSize: 18,
+  brandTextColumn: {
+    justifyContent: "center",
   },
   brandTitle: {
     color: colors.text,
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: "800",
   },
   brandSub: {
     color: colors.faint,
     fontSize: 12,
-    marginLeft: 42,
-    marginTop: 2,
+    marginTop: 1,
   },
   statsRow: {
     flexDirection: "row",
@@ -234,19 +210,20 @@ const styles = StyleSheet.create({
     height: 28,
     backgroundColor: colors.border,
   },
-  userButton: {
+  logoutButton: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.white,
+    borderRadius: 12,
+    backgroundColor: "#fff1f1",
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: "#ffe4e4",
     alignItems: "center",
     justifyContent: "center",
     ...shadow.soft,
   },
-  userIcon: {
-    color: colors.muted,
+  logoutIcon: {
+    color: colors.red,
+    fontSize: 20,
     fontWeight: "800",
   },
   error: {

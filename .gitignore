@@ -1,26 +1,75 @@
-**/.env
-**/node_modules
-**/dist
-**/coverage
-**/logs
-**/temp
-**/tmp
-**/cache
-**/build
-**/dist
-**/coverage
-**/logs
-**/temp
-**/tmp
-**/cache
-**/.expo
-**/.turbo
-**/.git
-**/.DS_Store
-**/*.log
-**/*.log.*
-**/*.log.*.*
-**/*.log.*.*.*
-**/*.log.*.*.*.*
-**/*.log.*.*.*.*.*
-**/*.log.*.*.*.*.*.*
+# Dependencies
+**/dist/
+node_modules/
+*.log
+latex/main.pdf
+latex/*.aux
+latex/*.log
+latex/*.out
+latex/*.toc
+latex/*.synctex.gz
+latex/*.fdb_latexmk
+latex/*.fls
+latex/nul
+**/node_modules/
+.pnp
+.pnp.js
+
+# Testing
+/coverage
+/.nyc_output
+
+# Production
+/build
+/dist
+/out
+
+# Expo
+.expo/
+web-build/
+
+# Next.js
+.next/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+
+# TypeScript
+*.tsbuildinfo
+
+# LaTeX Build Artifacts
+latex/*.aux
+latex/*.log
+latex/*.out
+latex/*.toc
+latex/*.synctex.gz
+latex/*.fdb_latexmk
+latex/*.fls
+latex/main.pdf
+
+# Project Specific Junk
+node_win/
+node_win22/
+apps/mobile/src_backup/
+.npmrc
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

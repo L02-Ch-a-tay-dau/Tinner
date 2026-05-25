@@ -1,4 +1,4 @@
-\section{Testing Coverage Report}
+\section{Báo cáo độ bao phủ kiểm thử}
 \label{sec:testing_coverage}
 
 \subsection{Giới thiệu Jest và các công cụ testing}
@@ -33,7 +33,7 @@ Bên cạnh Jest, chúng em còn kết hợp với các công cụ bổ trợ kh
 \end{itemize}
 
 
-\subsection{Tiêu chuẩn độ bao phủ (Coverage Standards)}
+\subsection{Tiêu chuẩn độ bao phủ}
 Để đảm bảo chất lượng phần mềm và hạn chế tối đa lỗi phát sinh, nhóm chúng em đã đặt ra các tiêu chuẩn cụ thể về độ bao phủ mã nguồn (Code Coverage) như sau:
 
 \begin{itemize}
@@ -74,6 +74,7 @@ src/dishes (Món ăn) & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{figure}
 
 \subsubsection{Module Auth (Xác thực)}
+
 Bảng dưới đây thể hiện độ bao phủ của các thành phần trong hệ thống xác thực người dùng:
 \begin{table}[H]
 \centering
@@ -86,7 +87,7 @@ jwt.strategy.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Suggestions (Gợi ý món ăn)}
+\subsubsection{Module Gợi ý món ăn}
 Module này chịu trách nhiệm tìm kiếm nhà hàng từ Overpass API và Foursquare, đây là phần có logic phức tạp nhất:
 \begin{table}[H]
 \centering
@@ -100,7 +101,7 @@ suggestions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Interactions (Tương tác người dùng)}
+\subsubsection{Module Tương tác người dùng}
 Kiểm thử các hành động Like/Dislike món ăn và lưu trữ nhà hàng:
 \begin{table}[H]
 \centering
@@ -112,7 +113,7 @@ interactions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Module Filters \& Dishes (Bộ lọc và Món ăn)}
+\subsubsection{Module Bộ lọc và Món ăn}
 Độ bao phủ của các module quản lý danh mục món ăn và bộ lọc người dùng:
 \begin{table}[H]
 \centering
@@ -127,7 +128,7 @@ dishes.service.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 
 
 
-\subsection{Các kịch bản kiểm thử API (Backend API Test Cases)}
+\subsection{Các kịch bản kiểm thử API}
 Để đảm bảo tính đúng đắn của các nghiệp vụ, chúng em đã thực hiện kiểm thử trên các kịch bản quan trọng sau:
 
 \begin{enumerate}
@@ -200,7 +201,50 @@ Toàn bộ 19/19 kịch bản kiểm thử E2E phân bổ trên 6 Test Suites đ
     \item \textbf{Tối ưu quy trình CI/CD:} Nhờ kiến trúc test không phụ thuộc vào các dịch vụ bên thứ 3 (như Database hay Overpass API), bộ E2E test rất nhẹ và không bị "flaky" (lúc pass lúc fail). Điều này tạo tiền đề vững chắc để tích hợp vào các luồng kiểm tra tự động (CI/CD) trong tương lai.
 \end{itemize}
 
-\subsection{Gap Analysis and Code Quality}
+\subsection{Phân tích khoảng trống kiểm thử và Chất lượng mã nguồn}
+\label{subsec:gap_analysis}
 
+Mặc dù hệ thống kiểm thử của dự án \textbf{Tinner} đạt tỷ lệ bao phủ tổng thể rất ấn tượng (trên \textbf{97\%} đối với mã nguồn Backend và hoàn thành xuất sắc toàn bộ kịch bản E2E), việc phân tích sâu vào báo cáo độ bao phủ chi tiết vẫn chỉ ra một số khoảng trống kiểm thử (Testing Gaps) nhất định. Dưới đây là phân tích chi tiết về các khoảng trống này và đề xuất các giải pháp kỹ thuật nhằm cải thiện chất lượng cũng như độ tin cậy của hệ thống.
 
-% Analyze the tested components, identify any gaps, and suggest improvements for code quality and reliability.
+\subsubsection{Phân tích khoảng trống kiểm thử (Gap Analysis)}
+
+Dựa trên bảng thống kê chi tiết ở các phần trước, chúng em nhận thấy có sự chênh lệch rõ rệt về độ bao phủ giữa các module:
+\begin{itemize}
+    \item \textbf{Độ bao phủ tuyệt đối ở các module tĩnh:} Các module như \texttt{auth}, \texttt{interactions}, \texttt{filters} đều đạt độ bao phủ từ \textbf{97\%} đến \texttt{100\%}. Điều này có được do logic của các module này chủ yếu xoay quanh việc truy vấn dữ liệu có cấu trúc ổn định thông qua Prisma ORM, có tính nhất quán cao và dễ dàng cô lập thông qua kỹ thuật mock database.
+    \item   \textbf{Khoảng trống kiểm thử tại module Suggestions:} Tệp tin \texttt{suggestions.service.ts} ghi nhận tỷ lệ bao phủ thấp nhất trong hệ thống, cụ thể đạt \textbf{80.64\%} về Statement Coverage và chỉ \textbf{70.00\%} về Branch Coverage. Đây chính là khoảng trống cần được phân tích kỹ lưỡng:
+    \begin{itemize}
+        \item \textit{Đặc thù nghiệp vụ phức tạp:} Module gợi ý đóng vai trò là lõi xử lý trung gian, chịu trách nhiệm kết nối trực tiếp với các dịch vụ dữ liệu bản đồ bên ngoài bao gồm \textbf{Overpass API} (dữ liệu OpenStreetMap) và \textbf{Foursquare API}.
+        \item \textit{Nhánh logic xử lý ngoại lệ chưa được phủ sóng:} Để đối phó với dữ liệu không chuẩn hóa hoặc thiếu trường thông tin (ví dụ: các node quán ăn từ OpenStreetMap không có tên, không có thuộc tính ẩm thực \texttt{cuisine}, hoặc tọa độ bị lỗi định dạng), hệ thống phải xây dựng nhiều khối xử lý ngoại lệ phức tạp bằng regex và các khối điều kiện \texttt{try/catch}. Các kịch bản test hiện tại chủ yếu giả lập dữ liệu đầu vào "sạch", dẫn đến việc các nhánh xử lý dữ liệu lỗi hoặc không nhất quán chưa được thực thi trong quá trình chạy test.
+        \item \textit{Cơ chế dự phòng (Fallback Mechanism) chưa được kiểm thử:} Khi một trong các dịch vụ bên thứ ba bị ngắt kết nối hoặc gặp lỗi mạng (ví dụ: Overpass API bị giới hạn băng thông - Rate Limit 429 hoặc lỗi Server 502), hệ thống được thiết kế để tự động chuyển sang cơ chế dự phòng lấy dữ liệu từ cơ sở dữ liệu cục bộ đã cache trước đó. Luồng logic dự phòng này rất khó giả lập trong các bài kiểm thử E2E thông thường nếu không có sự can thiệp tiêm lỗi sâu.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Đề xuất cải thiện chất lượng mã nguồn dựa trên kiểm thử}
+
+Để khắc phục các khoảng trống kiểm thử đã chỉ ra và nâng cao chất lượng mã nguồn lên tiêu chuẩn sản xuất (production-grade), nhóm đề xuất các biện pháp cải tiến kỹ thuật sau:
+
+\begin{enumerate}
+    \item \textbf{Áp dụng kỹ thuật Tiêm lỗi giả lập (Fault Injection Testing):}
+    \begin{itemize}
+        \item Cần bổ sung các ca kiểm thử tích hợp sử dụng thư viện giả lập HTTP như \texttt{nock} hoặc \texttt{msw} (Mock Service Worker) để chủ động tiêm các lỗi mạng giả lập (như HTTP Status 429 Too Many Requests, 504 Gateway Timeout, hoặc ngắt kết nối hoàn toàn).
+        \item Việc này sẽ ép buộc hệ thống phải chạy vào các khối \texttt{catch} và các nhánh rẽ dự phòng trong \texttt{suggestions.service.ts}, giúp tăng Branch Coverage của module này từ \textbf{70\%} lên trên \textbf{85\%}, đảm bảo ứng dụng không bao giờ bị sập (crash) bất ngờ khi dịch vụ bên thứ ba gặp sự cố.
+    \end{itemize}
+    
+    \item \textbf{Triển khai Kiểm thử Đột biến (Mutation Testing):}
+    \begin{itemize}
+        \item Để đánh giá độ tin cậy thực tế của bộ test suite hiện tại, đề xuất tích hợp công cụ \textbf{Stryker Mutator} vào dự án. 
+        \item Kiểm thử đột biến sẽ tự động tạo ra các biến thể mã nguồn lỗi nhỏ (ví dụ: đổi dấu so sánh \texttt{>} thành \texttt{<}, hoặc đổi toán tử logic \texttt{\&\&} thành \texttt{||}). Nếu bộ test suite hiện tại vẫn báo "Pass" khi chạy trên các mã nguồn lỗi này, điều đó chứng tỏ các ca kiểm thử chưa đủ nhạy bén và cần phải viết lại chặt chẽ hơn.
+    \end{itemize}
+
+    \item \textbf{Tích hợp Phân tích Mã tĩnh (Static Code Analysis):}
+    \begin{itemize}
+        \item Tích hợp công cụ phân tích tĩnh như \textbf{SonarQube} hoặc \textbf{ESLint} với các bộ quy tắc nghiêm ngặt (\textit{strict-mode}).
+        \item Công cụ này sẽ giúp phát hiện sớm các lỗi về độ phức tạp nhận thức (Cognitive Complexity) của các hàm xử lý dữ liệu bản đồ, phát hiện các đoạn mã trùng lặp (code duplication) hoặc các biến không sử dụng, từ đó định hướng tái cấu trúc (refactoring) mã nguồn gọn gàng và dễ bảo trì hơn.
+    \end{itemize}
+
+    \item \textbf{Tự động hóa kiểm thử trong quy trình CI/CD (Continuous Integration):}
+    \begin{itemize}
+        \item Thiết lập Git Hooks bằng \textbf{Husky} để tự động chạy kiểm thử nhanh (Unit Test) dưới local trước khi lập trình viên thực hiện lệnh \texttt{git commit}.
+        \item Cấu hình luồng tự động hóa \textbf{GitHub Actions} trên máy chủ chứa mã nguồn. Mỗi khi có một yêu cầu kéo mã (Pull Request) mới được tạo ra, hệ thống sẽ tự động chạy toàn bộ suite test và đo đạc độ bao phủ. Yêu cầu bắt buộc là tỷ lệ vượt qua phải đạt \textbf{100\%} và độ bao phủ toàn hệ thống không được giảm xuống dưới \textbf{95\%} thì mới cho phép tích hợp mã nguồn vào nhánh chính (\texttt{main}).
+    \end{itemize}
+\end{enumerate}

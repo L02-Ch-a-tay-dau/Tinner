@@ -1,5 +1,114 @@
-\section{Implementation Details}
-\label{sec:implementation_details}
+\section{Chi tiết triển khai}
 
-\subsection{Tools, Frameworks, and Languages}
-% Detail the tools, frameworks, and languages used (e.g., Android Studio, Kotlin/Java, backend technologies like NestJS).
+\subsection{Tổ chức mã nguồn (monorepo)}
+
+Dự án dùng monorepo \texttt{pnpm} (Node.js 22+, pnpm 10+) với các thành phần chính:
+
+\begin{itemize}
+  \item \texttt{apps/backend}: NestJS 11 + Prisma 7 + PostgreSQL, cung cấp REST API \texttt{/api/v1/*}.
+  \item \texttt{apps/mobile}: Expo SDK 54 + React Native (ứng dụng phát hành chính), đồng thời có mã web tham chiếu trong \texttt{src/}.
+  \item \texttt{packages/types}: kiểu dữ liệu dùng chung trong workspace.
+  \item \texttt{packages/api-client}: package API client typed phục vụ chia sẻ logic gọi API trong monorepo.
+\end{itemize}
+
+\subsection{Backend tại \texttt{apps/backend}}
+
+Backend viết bằng TypeScript với NestJS 11, kết nối PostgreSQL qua Prisma adapter \texttt{@prisma/adapter-pg}.
+
+\subsubsection{Khởi động ứng dụng và middleware toàn cục}
+
+Trong \texttt{main.ts}, hệ thống:
+\begin{itemize}
+  \item bật CORS (\texttt{origin: true}, \texttt{credentials: true});
+  \item dùng \texttt{cookie-parser};
+  \item đăng ký \texttt{GlobalExceptionFilter} để chuẩn hoá payload lỗi (ẩn chi tiết ở production, chỉ trả \texttt{details} validation ở non-production);
+  \item đăng ký \texttt{ValidationPipe} với \texttt{transform}, \texttt{whitelist}, \texttt{forbidNonWhitelisted};
+  \item publish Swagger UI tại \texttt{/api/docs}.
+\end{itemize}
+
+\subsubsection{Xác thực và quản trị phiên}
+
+Auth dùng JWT với access/refresh token:
+\begin{itemize}
+  \item Access token (mặc định 15 phút) dùng cho bearer auth ở các endpoint private.
+  \item Refresh token (mặc định 30 ngày) được lưu dạng hash trong bảng \texttt{refresh\_tokens}; mỗi lần refresh sẽ revoke token cũ và phát token mới.
+\end{itemize}
+
+\texttt{JwtAuthGuard} được đăng ký global qua \texttt{APP\_GUARD}. Các route public được đánh dấu bằng decorator \texttt{@Public()} (ví dụ: \texttt{/api/v1/auth/register}, \texttt{/api/v1/auth/login}, \texttt{/api/v1/auth/refresh}, \texttt{/api/v1/health}).
+
+\subsubsection{Các module nghiệp vụ}
+
+\begin{itemize}
+  \item \texttt{AuthModule}: đăng ký/đăng nhập/refresh/logout/me.
+  \item \texttt{DishesModule}: trả danh sách dish seed trong DB.
+  \item \texttt{FiltersModule}: lưu bộ lọc cá nhân (\texttt{cuisines}, \texttt{dietary}, \texttt{priceRanges}, \texttt{maxDistanceKm}, \texttt{minRating}).
+  \item \texttt{InteractionsModule}: ghi nhận thao tác like/save/saved/delete.
+  \item \texttt{SuggestionsModule}: xử lý luồng gợi ý địa điểm theo vị trí hiện tại.
+  \item \texttt{HealthController}: health check phục vụ giám sát runtime.
+\end{itemize}
+
+\subsubsection{Tầng gợi ý (\texttt{SuggestionsModule})}
+
+Code hiện tại triển khai chiến lược \textbf{SerpAPI-first + local database retrieval}:
+
+\begin{enumerate}
+  \item Nhận request \texttt{GET /api/v1/suggestions} với \texttt{lat}, \texttt{lng}, \texttt{dishType?}.
+  \item Đọc \texttt{user\_filters} của user để lấy \texttt{maxDistanceKm}, \texttt{minRating}, \texttt{cuisines}, \texttt{priceRanges}.
+  \item Nếu có \texttt{SERPAPI\_API\_KEY}, service gọi SerpAPI (engine Google Maps) để lấy dữ liệu gần user; có cooldown chống spam request.
+  \item Kết quả mới được insert hàng loạt bằng \texttt{createMany(..., skipDuplicates: true)} vào bảng \texttt{restaurants}.
+  \item Truy vấn lại DB theo bounding box + khoảng cách Haversine + ngưỡng rating; nếu có \texttt{dishType} thì lọc theo món, nếu không thì trả chế độ mixed và shuffle.
+  \item Cuối pipeline áp dụng thêm bộ lọc cuisine và price range rồi trả deck cho mobile.
+\end{enumerate}
+
+\textit{Lưu ý cập nhật codebase:} \texttt{overpass.service.ts} vẫn còn trong repo như utility, nhưng hiện chưa được wire vào \texttt{SuggestionsModule}; luồng runtime chính dùng \texttt{SerpapiService}.
+
+\subsubsection{Health check}
+
+Endpoint \texttt{GET /api/v1/health} trả \texttt{\{ status: "ok" \}} và được khai báo public. Render dùng endpoint này cho \texttt{healthCheckPath}.
+
+\subsection{Mobile app tại \texttt{apps/mobile}}
+
+Ứng dụng mobile dùng Expo + React Native, phát hành dưới dạng APK qua EAS.
+
+\subsubsection{Cấu trúc client native}
+
+\begin{itemize}
+  \item \texttt{App.tsx} bọc \texttt{SafeAreaProvider} và mount \texttt{AppShell}.
+  \item \texttt{app-native/AppShell.tsx} quản lý state phiên và điều hướng màn hình bằng state machine (\texttt{login/signup/swipe/map/collections/filters}).
+  \item \texttt{app-native/api.ts} đóng vai trò gateway gọi backend: login/signup/suggestions/interactions/filters.
+  \item \texttt{expo-location} dùng lấy vị trí hiện tại; nếu từ chối quyền thì fallback toạ độ trung tâm TP.HCM.
+  \item Endpoint backend lấy từ \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+\end{itemize}
+
+\subsubsection{Phát triển và build}
+
+\begin{itemize}
+  \item Chạy local: \texttt{pnpm dev:mobile}.
+  \item Build APK: \texttt{pnpm deploy:apk} (đi tới script \texttt{apk:build} trong \texttt{@tinner/mobile}).
+  \item \texttt{apps/mobile/eas.json} đã có profile \texttt{preview} và \texttt{production} cho Android APK.
+\end{itemize}
+
+\subsection{Mã web tham chiếu (tuỳ chọn)}
+
+Codebase có thêm phần web trong \texttt{apps/mobile/src} (React + Vite) để tham chiếu giao diện và chạy thử nhanh khi cần. Thành phần này không thay thế luồng phát hành chính của đề tài là ứng dụng di động cài đặt trên thiết bị.
+
+\subsection{Phát triển cục bộ và kiểm thử}
+
+\subsubsection{Chạy local stack bằng Docker Compose}
+
+\texttt{docker-compose.yml} cung cấp 2 service: \texttt{postgres} và \texttt{backend}. Lệnh khởi chạy: \texttt{docker compose up -d --build}.
+
+\subsubsection{Migration và seed}
+
+\begin{itemize}
+  \item Sinh client: \texttt{pnpm --filter @tinner/backend prisma:generate}
+  \item Migration dev: \texttt{pnpm --filter @tinner/backend prisma:migrate}
+  \item Migration production: \texttt{pnpm --filter @tinner/backend prisma:migrate:deploy}
+  \item Seed: \texttt{pnpm --filter @tinner/backend prisma:seed}
+\end{itemize}
+
+Trong container production, script \texttt{apps/backend/scripts/start.sh} chạy \texttt{prisma:migrate:deploy} trước rồi mới start NestJS.
+
+\subsubsection{Kiểm thử}
+
+Backend có sẵn script Jest (\texttt{test}, \texttt{test:cov}, \texttt{test:e2e}) trong \texttt{apps/backend/package.json}. Ở trạng thái hiện tại của repository, chưa có file test \texttt{*.spec.ts} trong \texttt{src}.

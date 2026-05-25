@@ -1,8 +1,65 @@
-\section{Deployment Strategy}
-\label{sec:deployment_strategy}
+\section{Chiến lược triển khai}
 
-\subsection{Application and Backend Deployment}
-% Explain how the app and backend were deployed, including cloud providers.
+\subsection{Mục tiêu triển khai}
 
-\subsection{CI/CD Pipelines}
-% Details on CI/CD pipelines (e.g., via GitHub Actions).
+Chiến lược triển khai hiện tại tập trung vào ba khối runtime bắt buộc:
+\begin{itemize}
+  \item \textbf{Database}: PostgreSQL managed (Aiven).
+  \item \textbf{Backend API}: Docker web service (Render).
+  \item \textbf{Mobile distribution}: build APK qua Expo EAS.
+\end{itemize}
+
+\subsection{Tech stack triển khai}
+
+\begin{itemize}
+  \item \textbf{DB}: PostgreSQL 16, connection string có \texttt{sslmode=require}.
+  \item \textbf{Backend}: Render + Dockerfile tại \texttt{apps/backend/Dockerfile}.
+  \item \textbf{Mobile}: EAS Build (\texttt{preview}/\texttt{production}) với biến \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
+\end{itemize}
+
+\subsection{Triển khai backend trên Render}
+
+File \texttt{render.yaml} cấu hình service backend:
+\begin{itemize}
+  \item \texttt{runtime: docker}, \texttt{dockerfilePath: ./apps/backend/Dockerfile}, \texttt{dockerContext: .}
+  \item \texttt{healthCheckPath: /api/v1/health}, \texttt{autoDeploy: true}
+  \item biến môi trường bắt buộc: \texttt{DATABASE\_URL}, \texttt{JWT\_ACCESS\_SECRET}, \texttt{JWT\_REFRESH\_SECRET}, TTL cho access/refresh token.
+\end{itemize}
+
+Ngoài ra, do luồng gợi ý hiện dùng SerpAPI, môi trường production cần cấu hình thêm \texttt{SERPAPI\_API\_KEY}.
+
+\subsection{Chiến lược dữ liệu với Aiven}
+
+\begin{itemize}
+  \item Tạo PostgreSQL instance trên Aiven và lấy URL có SSL.
+  \item Gán URL đó vào \texttt{DATABASE\_URL} của Render.
+  \item \texttt{PrismaService} tự phân tích \texttt{sslmode} và bật \texttt{ssl.rejectUnauthorized=false} khi cần.
+  \item Migrate schema bằng \texttt{prisma:migrate:deploy} trong entrypoint container trước khi start app.
+\end{itemize}
+
+\subsection{Phát hành mobile qua Expo EAS}
+
+\begin{enumerate}
+  \item Đăng nhập EAS: \texttt{npx eas-cli login}.
+  \item Dùng \texttt{apps/mobile/eas.json} với profile \texttt{preview}, \texttt{production}.
+  \item Cấu hình \texttt{EXPO\_PUBLIC\_API\_BASE\_URL} trỏ về backend Render.
+  \item Build APK preview: \texttt{pnpm --filter @tinner/mobile apk:build-preview}.
+  \item Build APK production: \texttt{pnpm deploy:apk}.
+\end{enumerate}
+
+\subsection{Vận hành và CI/CD}
+
+\begin{itemize}
+  \item Render tự động deploy khi có commit mới (\texttt{autoDeploy: true}).
+  \item Health check runtime qua \texttt{/api/v1/health}.
+  \item Pipeline lint/test có thể chạy qua script root (\texttt{pnpm lint}, \texttt{pnpm test}) trước khi merge để giảm rủi ro deploy lỗi.
+\end{itemize}
+
+\subsection{Tóm tắt}
+
+Mô hình triển khai hiện tại phù hợp với phạm vi MVP:
+\begin{itemize}
+  \item backend tách biệt với mobile, scale độc lập;
+  \item DB managed giúp giảm chi phí vận hành thủ công;
+  \item mobile release theo dạng binary APK đúng bối cảnh sản phẩm di động.
+\end{itemize}

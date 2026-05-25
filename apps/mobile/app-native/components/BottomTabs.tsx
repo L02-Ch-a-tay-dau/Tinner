@@ -2,13 +2,18 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, shadow, spacing } from "../theme";
 import type { ScreenName } from "../types";
+import { Ionicons } from '@expo/vector-icons'; 
 
-const tabs: Array<{ screen: ScreenName; label: string; icon: string }> = [
-  { screen: "swipe", label: "Swipe", icon: "⌂" },
-  { screen: "map", label: "Map", icon: "⌖" },
-  { screen: "collections", label: "Saved", icon: "♡" },
-  { screen: "filters", label: "Profile", icon: "☷" },
+// 1. Định nghĩa bộ icon mới: Đậm hơn và phù hợp với vibe "Tinner"
+const tabs: Array<{ screen: ScreenName; label: string; icon: any; activeIcon: any }> = [
+  { screen: "swipe", label: "Swipe", icon: "flame-outline", activeIcon: "flame" }, // Dùng icon ngọn lửa cho vibe "hot/trending"
+  { screen: "map", label: "Map", icon: "location-outline", activeIcon: "location" },
+  { screen: "collections", label: "Saved", icon: "heart-outline", activeIcon: "heart" },
+  { screen: "filters", label: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
+
+// 2. Cố định kích thước icon lớn
+const ICON_SIZE = 32; 
 
 interface BottomTabsProps {
   active: ScreenName;
@@ -17,19 +22,33 @@ interface BottomTabsProps {
 
 export function BottomTabs({ active, onChange }: BottomTabsProps) {
   const insets = useSafeAreaInsets();
-  const bottomInset = Math.max(insets.bottom, 8);
+  const bottomInset = Math.max(insets.bottom, 10);
+
   return (
-    <View style={[styles.wrap, { height: spacing.navHeight + bottomInset, paddingBottom: bottomInset }]}>
+    <View style={[styles.wrap, { height: 85 + insets.bottom, paddingBottom: bottomInset }]}>
       {tabs.map((tab) => {
         const isActive = active === tab.screen;
         return (
           <Pressable
             key={tab.screen}
             onPress={() => onChange(tab.screen)}
-            style={[styles.tab, isActive && styles.activeTab]}
+            style={({ pressed }) => [
+              styles.tab,
+              pressed && { opacity: 0.8, transform: [{ scale: 0.92 }] } 
+            ]}
           >
-            <Text style={[styles.icon, isActive && styles.activeText]}>{tab.icon}</Text>
-            <Text style={[styles.label, isActive && styles.activeText]}>{tab.label}</Text>
+            {/* Vùng chứa Icon cố định để đảm bảo căn lề luôn chuẩn */}
+            <View style={[styles.iconContainer, isActive && styles.activeIconContainer]}>
+              <Ionicons 
+                name={isActive ? tab.activeIcon : tab.icon} 
+                size={ICON_SIZE} 
+                color={isActive ? colors.orange : colors.faint} 
+              />
+            </View>
+            
+            <Text style={[styles.label, isActive && styles.activeText]}>
+              {tab.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -45,33 +64,41 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: "#f0f0f0",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingHorizontal: 8,
-    ...shadow.soft,
+    paddingHorizontal: 10,
+    // Đổ bóng đậm hơn một chút để tạo độ nổi khối
+    elevation: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
-    borderRadius: 14,
-    gap: 2,
+    paddingTop: 12,
   },
-  activeTab: {
+  iconContainer: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 24,
+    marginBottom: 4,
+  },
+  activeIconContainer: {
+    // Hiệu ứng nền nhẹ khi được chọn để icon "to" càng thêm nổi bật
     backgroundColor: colors.orangeSoft,
   },
-  icon: {
-    color: colors.faint,
-    fontSize: 19,
-    lineHeight: 22,
-  },
   label: {
-    color: colors.muted,
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
+    color: colors.muted,
+    marginTop: 2,
   },
   activeText: {
     color: colors.orange,

@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -56,9 +57,7 @@ export function SignupScreen({
       >
         <View style={styles.card}>
           <View style={styles.logoWrap}>
-            <View style={styles.logo}>
-              <Text style={styles.logoText}>⌘</Text>
-            </View>
+            <Image source={require("../../assets/tinner_logo.png")} style={styles.logo} />
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Start your food discovery journey</Text>
           </View>
@@ -181,14 +180,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   logo: {
-    width: 64,
-    height: 64,
-    borderRadius: spacing.radius2xl,
-    backgroundColor: colors.orange,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
     marginBottom: 16,
-    ...shadow.soft,
   },
   logoText: {
     color: colors.white,

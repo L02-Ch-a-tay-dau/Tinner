@@ -1,8 +1,59 @@
-\section{Web Service Design}
-\label{sec:web_service_design}
+\section{Thiết kế dịch vụ web}
 
-\subsection{Backend Services}
-% Describe the backend services (e.g., REST API or GraphQL).
+\subsection{Kiểu dịch vụ và quy ước route}
 
-\subsection{Best Practices}
-% Include best practices for security, validation, and documentation (e.g., Swagger).
+Hệ thống dùng REST API, version prefix \texttt{/api/v1}. Các endpoint chính:
+
+\begin{center}
+\begin{tabular}{p{5.5cm} p{1.6cm} p{6.5cm}}
+\toprule
+\textbf{Endpoint} & \textbf{Method} & \textbf{Mô tả ngắn} \\
+\midrule
+\texttt{/auth/register} & POST & Public. Đăng ký tài khoản mới. \\
+\texttt{/auth/login} & POST & Public. Đăng nhập bằng email/password. \\
+\texttt{/auth/refresh} & POST & Public. Cấp lại access token từ refresh token. \\
+\texttt{/auth/logout} & POST & Revoke refresh token hiện tại. \\
+\texttt{/auth/me} & GET & Lấy thông tin user đang đăng nhập. \\
+\texttt{/dishes} & GET & Lấy danh sách dish từ DB. \\
+\texttt{/filters} & GET/PUT & Đọc/cập nhật bộ lọc cá nhân. \\
+\texttt{/interactions/like} & POST & Ghi nhận thao tác like dish. \\
+\texttt{/interactions/save} & POST & Lưu nhà hàng khi swipe right. \\
+\texttt{/interactions/saved} & GET & Danh sách nhà hàng đã lưu. \\
+\texttt{/interactions/saved/:id} & DELETE & Xoá một nhà hàng đã lưu. \\
+\texttt{/suggestions} & GET & Trả danh sách gợi ý theo vị trí và filter. \\
+\texttt{/health} & GET & Public. Trạng thái backend (\texttt{\{ status: "ok" \}}). \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Toàn bộ endpoint ở bảng trên đều có tiền tố \texttt{/api/v1}.
+
+\subsection{Xác thực và phân quyền}
+
+\begin{itemize}
+  \item Access token dùng bearer auth cho các route private.
+  \item Refresh token là JWT, được hash bằng \texttt{bcrypt} trước khi lưu DB.
+  \item \texttt{JwtAuthGuard} áp dụng toàn cục; route public dùng \texttt{@Public()} để bypass guard.
+  \item Luồng refresh/logout đều dựa trên so khớp hash refresh token đã lưu trong bảng \texttt{refresh\_tokens}.
+\end{itemize}
+
+\subsection{Validation, xử lý lỗi và bảo mật}
+
+\begin{itemize}
+  \item DTO dùng \texttt{class-validator}; ví dụ \texttt{GetSuggestionsDto} ép kiểu và kiểm tra range \texttt{lat/lng}, \texttt{dishType}.
+  \item \texttt{ValidationPipe} toàn cục bật \texttt{transform}, \texttt{whitelist}, \texttt{forbidNonWhitelisted}.
+  \item \texttt{GlobalExceptionFilter} chuẩn hoá response lỗi; lỗi không lường trước được log server-side và trả mã \texttt{500}.
+  \item Client mobile parse lỗi qua \texttt{extractErrorMessage()} để chỉ hiển thị message ngắn gọn.
+  \item Secrets đọc từ biến môi trường runtime: \texttt{DATABASE\_URL}, JWT secrets, token TTL, và \texttt{SERPAPI\_API\_KEY}.
+\end{itemize}
+
+\subsection{Tài liệu hoá API}
+
+Backend tích hợp Swagger/OpenAPI qua \texttt{@nestjs/swagger}. Tài liệu truy cập tại \texttt{/api/docs}, có cấu hình Bearer Auth trong \texttt{DocumentBuilder}.
+
+Swagger được dùng để:
+\begin{itemize}
+  \item kiểm thử endpoint nhanh ở môi trường dev;
+  \item đồng bộ payload giữa backend và mobile;
+  \item làm nền cho việc export schema OpenAPI phục vụ automation/testing về sau.
+\end{itemize}

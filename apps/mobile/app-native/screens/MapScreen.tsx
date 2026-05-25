@@ -10,7 +10,7 @@ interface MapScreenProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onOpenFilters: () => void;
-  /** Shown when there are zero places (e.g. guest / before swipe deck loads) */
+  /** Shown when there are zero places (e.g. before swipe deck loads) */
   emptyHint?: string;
 }
 

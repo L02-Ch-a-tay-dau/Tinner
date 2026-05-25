@@ -5,16 +5,24 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "assetBundlePatterns": ["**/*"],
+    "icon": "./assets/tinner_logo.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/tinner_logo.png",
         "backgroundColor": "#ffffff"
       }
     },
-    "plugins": ["expo-secure-store", "expo-location"],
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      "expo-asset"
+    ],
     "extra": {
       "apiBaseUrl": "use EXPO_PUBLIC_API_BASE_URL from .env"
     }

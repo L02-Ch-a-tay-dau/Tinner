@@ -1,6 +1,7 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View, Alert } from "react-native";
 import { colors, shadow, sharedStyles, spacing } from "../theme";
-
+// 1. Import Sentry
+import * as Sentry from '@sentry/react-native';
 interface LoginScreenProps {
   email: string;
   password: string;
@@ -22,16 +23,36 @@ export function LoginScreen({
   onLogin,
   onGoToSignup,
 }: LoginScreenProps) {
+
+  // 2. Hàm gây lỗi thử nghiệm
+  const handleTestSentry = () => {
+    // Cách 1: Gửi một tin nhắn thông báo (không gây crash)
+    Sentry.captureMessage("User clicked Test Sentry button");
+
+    // Cách 2: Gây lỗi crash thực sự sau 500ms để bạn kịp thấy thông báo
+    Alert.alert("Sentry Test", "Ứng dụng sẽ gây lỗi và gửi báo cáo sau 1 giây.");
+    
+    setTimeout(() => {
+      throw new Error("Tinner App Test Error: " + new Date().toISOString());
+    }, 1000);
+  };
+
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
         <View style={styles.logoWrap}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>⌘</Text>
-          </View>
+          <Image source={require("../../assets/tinner_logo.png")} style={styles.logo} />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Log in to continue swiping</Text>
         </View>
+        {/* Nút Test Sentry (Đã ẩn đi)
+        <Pressable 
+          style={[styles.debugButton, { borderColor: colors.orange, marginTop: 10 }]} 
+          onPress={handleTestSentry}
+        >
+          <Text style={[styles.debugText, { color: colors.orange }]}>🛠 Debug: Trigger Sentry Error</Text>
+        </Pressable>
+        */}
 
         {!!error && <Text style={sharedStyles.error}>{error}</Text>}
 
@@ -97,14 +118,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   logo: {
-    width: 64,
-    height: 64,
-    borderRadius: spacing.radius2xl,
-    backgroundColor: colors.orange,
-    alignItems: "center",
-    justifyContent: "center",
+    width: 80,
+    height: 80,
+    resizeMode: "contain",
     marginBottom: 16,
-    ...shadow.soft,
   },
   logoText: {
     color: colors.white,
@@ -159,5 +176,32 @@ const styles = StyleSheet.create({
   signupLink: {
     color: colors.orange,
     fontWeight: "700",
+  },
+  debugButton: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: spacing.radiusLg,
+    paddingVertical: 14,
+    alignItems: "center",
+    ...shadow.soft,
+  },
+  debugText: {
+    color: "#374151",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  demoBox: {
+    backgroundColor: colors.blueSoft,
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    borderRadius: spacing.radiusXl,
+    padding: 14,
+    marginTop: 4,
+  },
+  demoText: {
+    color: "#1e3a8a",
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

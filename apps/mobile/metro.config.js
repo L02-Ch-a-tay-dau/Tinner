@@ -6,9 +6,10 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
+// IMPORTANT: Metro needs to watch the workspace root to resolve hoisted modules
 config.watchFolders = [
-  projectRoot,
-  path.resolve(workspaceRoot, "node_modules"),
+  workspaceRoot,
+  ...(config.watchFolders || [])
 ];
 
 config.resolver.nodeModulesPaths = [
@@ -16,11 +17,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, "node_modules"),
 ];
 
-config.resolver.unstable_enableSymlinks = true;
-config.resolver.unstable_enablePackageExports = true;
-
 config.resolver.blockList = [
   /[\\/]apps[\\/]backend[\\/]dist[\\/].*/,
+  /[\\/]\.bin[\\/].*/,
 ];
 
 module.exports = config;
