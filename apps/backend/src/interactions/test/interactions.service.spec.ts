@@ -71,11 +71,13 @@ describe("InteractionsService", () => {
         {
           id: "i1",
           dishType: "pho" as DishType,
+          createdAt: new Date("2026-05-25T08:00:00.000Z"),
           restaurant: { id: "r1", name: "Restaurant 1", dishTypes: ["pho"] },
         },
         {
           id: "i2",
           dishType: "banh_mi" as DishType,
+          createdAt: new Date("2026-05-25T09:00:00.000Z"),
           restaurant: null, // Should be filtered out
         },
       ];

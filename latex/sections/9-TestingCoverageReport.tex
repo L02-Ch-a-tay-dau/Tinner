@@ -73,7 +73,7 @@ src/dishes (Món ăn) & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
     \label{fig:test_cov}
 \end{figure}
 
-\subsubsection{Module Auth (Xác thực)}
+\subsubsection{Module Auth}
 
 Bảng dưới đây thể hiện độ bao phủ của các thành phần trong hệ thống xác thực người dùng:
 \begin{table}[H]
@@ -88,7 +88,7 @@ jwt.strategy.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{table}
 
 \subsubsection{Module Gợi ý món ăn}
-Module này chịu trách nhiệm tìm kiếm nhà hàng từ Overpass API và Foursquare, đây là phần có logic phức tạp nhất:
+Module này chịu trách nhiệm tìm kiếm nhà hàng từ Overpass API và SerpAPI, đây là phần có logic phức tạp nhất:
 \begin{table}[H]
 \centering
 \begin{tabular}{|l|c|c|c|c|}
@@ -96,7 +96,7 @@ Module này chịu trách nhiệm tìm kiếm nhà hàng từ Overpass API và F
 \textbf{File} & \textbf{\% Stmts} & \textbf{\% Branch} & \textbf{\% Funcs} & \textbf{\% Lines} \\ \hline
 suggestions.service.ts & 80.64 & 70.00 & 87.50 & 80.70 \\ \hline
 overpass.service.ts & 100.00 & 94.73 & 100.00 & 100.00 \\ \hline
-foursquare.service.ts & 100.00 & 87.50 & 100.00 & 100.00 \\ \hline
+serpapi.service.ts & 100.00 & 87.50 & 100.00 & 100.00 \\ \hline
 suggestions.controller.ts & 100.00 & 75.00 & 100.00 & 100.00 \\ \hline
 \end{tabular}
 \end{table}
@@ -169,12 +169,12 @@ Dưới đây là bảng tổng hợp các kịch bản kiểm thử End-to-End 
 \begin{tabular}{|l|c|l|}
 \hline
 \textbf{E2E Module} & \textbf{Số tests} & \textbf{Các scenarios được cover} \\ \hline
-auth.e2e.ts & 5 & register new user, login, get profile with token \\ \hline
-suggestions.e2e.ts & 4 & fetch restaurants around, sync from Overpass \\ \hline
-interactions.e2e.ts & 3 & like dish flow, save restaurant, check swiped history \\ \hline
-dishes.e2e.ts & 3 & get all categories, list dishes by type \\ \hline
-filters.e2e.ts & 2 & update and apply filters to results \\ \hline
-app.e2e.ts & 2 & health check, root path check \\ \hline
+auth.e2e-spec.ts & 5 & register new user, login, get profile with token \\ \hline
+suggestions.e2e-spec.ts & 4 & fetch restaurants around, sync from Overpass \\ \hline
+interactions.e2e-spec.ts & 3 & like dish flow, save restaurant, check swiped history \\ \hline
+dishes.e2e-spec.ts & 3 & get all categories, list dishes by type \\ \hline
+filters.e2e-spec.ts & 2 & update and apply filters to results \\ \hline
+app.e2e-spec.ts & 2 & health check, root path check \\ \hline
 \end{tabular}
 \end{table}
 
@@ -206,14 +206,14 @@ Toàn bộ 19/19 kịch bản kiểm thử E2E phân bổ trên 6 Test Suites đ
 
 Mặc dù hệ thống kiểm thử của dự án \textbf{Tinner} đạt tỷ lệ bao phủ tổng thể rất ấn tượng (trên \textbf{97\%} đối với mã nguồn Backend và hoàn thành xuất sắc toàn bộ kịch bản E2E), việc phân tích sâu vào báo cáo độ bao phủ chi tiết vẫn chỉ ra một số khoảng trống kiểm thử (Testing Gaps) nhất định. Dưới đây là phân tích chi tiết về các khoảng trống này và đề xuất các giải pháp kỹ thuật nhằm cải thiện chất lượng cũng như độ tin cậy của hệ thống.
 
-\subsubsection{Phân tích khoảng trống kiểm thử (Gap Analysis)}
+\subsubsection{Phân tích khoảng trống kiểm thử}
 
 Dựa trên bảng thống kê chi tiết ở các phần trước, chúng em nhận thấy có sự chênh lệch rõ rệt về độ bao phủ giữa các module:
 \begin{itemize}
     \item \textbf{Độ bao phủ tuyệt đối ở các module tĩnh:} Các module như \texttt{auth}, \texttt{interactions}, \texttt{filters} đều đạt độ bao phủ từ \textbf{97\%} đến \texttt{100\%}. Điều này có được do logic của các module này chủ yếu xoay quanh việc truy vấn dữ liệu có cấu trúc ổn định thông qua Prisma ORM, có tính nhất quán cao và dễ dàng cô lập thông qua kỹ thuật mock database.
     \item   \textbf{Khoảng trống kiểm thử tại module Suggestions:} Tệp tin \texttt{suggestions.service.ts} ghi nhận tỷ lệ bao phủ thấp nhất trong hệ thống, cụ thể đạt \textbf{80.64\%} về Statement Coverage và chỉ \textbf{70.00\%} về Branch Coverage. Đây chính là khoảng trống cần được phân tích kỹ lưỡng:
     \begin{itemize}
-        \item \textit{Đặc thù nghiệp vụ phức tạp:} Module gợi ý đóng vai trò là lõi xử lý trung gian, chịu trách nhiệm kết nối trực tiếp với các dịch vụ dữ liệu bản đồ bên ngoài bao gồm \textbf{Overpass API} (dữ liệu OpenStreetMap) và \textbf{Foursquare API}.
+        \item \textit{Đặc thù nghiệp vụ phức tạp:} Module gợi ý đóng vai trò là lõi xử lý trung gian, chịu trách nhiệm kết nối trực tiếp với các dịch vụ dữ liệu bản đồ bên ngoài bao gồm \textbf{Overpass API} (dữ liệu OpenStreetMap) và \textbf{SerpAPI} (dữ liệu Google Maps).
         \item \textit{Nhánh logic xử lý ngoại lệ chưa được phủ sóng:} Để đối phó với dữ liệu không chuẩn hóa hoặc thiếu trường thông tin (ví dụ: các node quán ăn từ OpenStreetMap không có tên, không có thuộc tính ẩm thực \texttt{cuisine}, hoặc tọa độ bị lỗi định dạng), hệ thống phải xây dựng nhiều khối xử lý ngoại lệ phức tạp bằng regex và các khối điều kiện \texttt{try/catch}. Các kịch bản test hiện tại chủ yếu giả lập dữ liệu đầu vào "sạch", dẫn đến việc các nhánh xử lý dữ liệu lỗi hoặc không nhất quán chưa được thực thi trong quá trình chạy test.
         \item \textit{Cơ chế dự phòng (Fallback Mechanism) chưa được kiểm thử:} Khi một trong các dịch vụ bên thứ ba bị ngắt kết nối hoặc gặp lỗi mạng (ví dụ: Overpass API bị giới hạn băng thông - Rate Limit 429 hoặc lỗi Server 502), hệ thống được thiết kế để tự động chuyển sang cơ chế dự phòng lấy dữ liệu từ cơ sở dữ liệu cục bộ đã cache trước đó. Luồng logic dự phòng này rất khó giả lập trong các bài kiểm thử E2E thông thường nếu không có sự can thiệp tiêm lỗi sâu.
     \end{itemize}

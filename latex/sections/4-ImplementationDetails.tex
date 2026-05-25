@@ -1,6 +1,6 @@
 \section{Chi tiết triển khai}
 
-\subsection{Tổ chức mã nguồn (monorepo)}
+\subsection{Tổ chức mã nguồn}
 
 Dự án dùng monorepo \texttt{pnpm} (Node.js 22+, pnpm 10+) với các thành phần chính:
 
@@ -47,7 +47,7 @@ Auth dùng JWT với access/refresh token:
   \item \texttt{HealthController}: health check phục vụ giám sát runtime.
 \end{itemize}
 
-\subsubsection{Tầng gợi ý (\texttt{SuggestionsModule})}
+\subsubsection{Tầng gợi ý}
 
 Code hiện tại triển khai chiến lược \textbf{SerpAPI-first + local database retrieval}:
 
@@ -60,7 +60,7 @@ Code hiện tại triển khai chiến lược \textbf{SerpAPI-first + local dat
   \item Cuối pipeline áp dụng thêm bộ lọc cuisine và price range rồi trả deck cho mobile.
 \end{enumerate}
 
-\textit{Lưu ý cập nhật codebase:} \texttt{overpass.service.ts} vẫn còn trong repo như utility, nhưng hiện chưa được wire vào \texttt{SuggestionsModule}; luồng runtime chính dùng \texttt{SerpapiService}.
+
 
 \subsubsection{Health check}
 
@@ -75,7 +75,7 @@ Endpoint \texttt{GET /api/v1/health} trả \texttt{\{ status: "ok" \}} và đư�
 \begin{itemize}
   \item \texttt{App.tsx} bọc \texttt{SafeAreaProvider} và mount \texttt{AppShell}.
   \item \texttt{app-native/AppShell.tsx} quản lý state phiên và điều hướng màn hình bằng state machine (\texttt{login/signup/swipe/map/collections/filters}).
-  \item \texttt{app-native/api.ts} đóng vai trò gateway gọi backend: login/signup/suggestions/interactions/filters.
+  \item \texttt{app-native/api.ts} đóng vai trò gateway gọi backend: login / signup / suggestions / interactions / filters.
   \item \texttt{expo-location} dùng lấy vị trí hiện tại; nếu từ chối quyền thì fallback toạ độ trung tâm TP.HCM.
   \item Endpoint backend lấy từ \texttt{EXPO\_PUBLIC\_API\_BASE\_URL}.
 \end{itemize}
@@ -88,7 +88,7 @@ Endpoint \texttt{GET /api/v1/health} trả \texttt{\{ status: "ok" \}} và đư�
   \item \texttt{apps/mobile/eas.json} đã có profile \texttt{preview} và \texttt{production} cho Android APK.
 \end{itemize}
 
-\subsection{Mã web tham chiếu (tuỳ chọn)}
+\subsection{Mã web tham chiếu}
 
 Codebase có thêm phần web trong \texttt{apps/mobile/src} (React + Vite) để tham chiếu giao diện và chạy thử nhanh khi cần. Thành phần này không thay thế luồng phát hành chính của đề tài là ứng dụng di động cài đặt trên thiết bị.
 
@@ -111,4 +111,4 @@ Trong container production, script \texttt{apps/backend/scripts/start.sh} chạy
 
 \subsubsection{Kiểm thử}
 
-Backend có sẵn script Jest (\texttt{test}, \texttt{test:cov}, \texttt{test:e2e}) trong \texttt{apps/backend/package.json}. Ở trạng thái hiện tại của repository, chưa có file test \texttt{*.spec.ts} trong \texttt{src}.
+Backend có sẵn script Jest (\texttt{test}, \texttt{test:cov}, \texttt{test:e2e}) trong \texttt{apps/backend/package.json}. Ở trạng thái hiện tại của repository, đã có các file Unit Test \texttt{*.spec.ts} được tổ chức theo từng module bên trong thư mục \texttt{src/**/test/}.

@@ -56,8 +56,8 @@ describe("AuthController", () => {
 
   describe("logout", () => {
     it("should call authService.logout", async () => {
-      await controller.logout({ refreshToken: "rt" });
-      expect(service.logout).toHaveBeenCalledWith("rt");
+      await controller.logout({ sub: "u1" }, { refreshToken: "rt" } as any);
+      expect(service.logout).toHaveBeenCalledWith("u1", "rt");
     });
   });
 

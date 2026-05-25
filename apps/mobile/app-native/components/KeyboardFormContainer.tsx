@@ -33,11 +33,13 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+    ...(Platform.OS === "web" ? { minHeight: "100vh" } : {}),
   },
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 40,
+    justifyContent: "center",
   },
 });

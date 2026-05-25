@@ -11,41 +11,14 @@ Kiến trúc hiện tại gồm ba lớp chính và một tích hợp dữ liệ
   \item \textbf{External data}: SerpAPI (Google Maps engine) để lấy danh sách địa điểm ăn uống gần user theo toạ độ.
 \end{itemize}
 
-\subsection{Sơ đồ kiến trúc (Mermaid)}
+\subsection{Sơ đồ kiến trúc}
 
-\begin{lstlisting}[frame=single]
-flowchart TB
-  subgraph Clients
-    Mobile[Expo React Native app]
-    WebRef[Optional web reference]
-  end
-
-  subgraph Backend[NestJS Backend on Render]
-    API[REST API /api/v1/*]
-    Guard[JWT Auth Guard]
-    Filter[GlobalExceptionFilter + ValidationPipe]
-    Auth[Auth Module]
-    Domain[Dishes / Filters / Interactions]
-    Suggest[Suggestions Module]
-    Prisma[Prisma ORM]
-  end
-
-  DB[(PostgreSQL)]
-  SerpAPI[SerpAPI Google Maps]
-
-  Mobile --> API
-  WebRef --> API
-  API --> Guard
-  API --> Filter
-  Guard --> Auth
-  Guard --> Domain
-  Guard --> Suggest
-  Auth --> Prisma
-  Domain --> Prisma
-  Suggest --> Prisma
-  Prisma --> DB
-  Suggest -.fetch nearby places.-> SerpAPI
-\end{lstlisting}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{images/mermaid-diagram-2026-05-25-215711}
+    \caption{Sơ đồ kiến trúc hệ thống}
+    \label{fig:system_architecture}
+\end{figure}
 
 \subsection{Luồng xử lý \texttt{/suggestions}}
 
