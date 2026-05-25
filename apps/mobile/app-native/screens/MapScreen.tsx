@@ -135,7 +135,7 @@ export function MapScreen({
         </Pressable>
       </View>
 
-      <View style={styles.searchWrap}>
+      {/* <View style={styles.searchWrap}>
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput
           style={styles.searchInput}
@@ -144,7 +144,7 @@ export function MapScreen({
           placeholder="Search restaurants or dishes..."
           placeholderTextColor={colors.faint}
         />
-      </View>
+      </View> */}
 
       <View style={filterChipStyles.filterRow}>
         <Text style={filterChipStyles.filterLabel}>Rating</Text>

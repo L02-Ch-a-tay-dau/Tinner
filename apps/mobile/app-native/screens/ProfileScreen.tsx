@@ -72,10 +72,16 @@ export function ProfileScreen({
   const initial = (displayName || email || "U").slice(0, 1).toUpperCase();
 
   const confirmLogout = () => {
-    Alert.alert("Đăng xuất?", "Bạn sẽ cần đăng nhập lại để tiếp tục dùng Tinner.", [
-      { text: "Hủy", style: "cancel" },
-      { text: "Đăng xuất", style: "destructive", onPress: onLogout },
-    ]);
+    if (Platform.OS === "web") {
+      if (window.confirm("Bạn sẽ cần đăng nhập lại để tiếp tục dùng Tinner. Đăng xuất?")) {
+        onLogout();
+      }
+    } else {
+      Alert.alert("Đăng xuất?", "Bạn sẽ cần đăng nhập lại để tiếp tục dùng Tinner.", [
+        { text: "Hủy", style: "cancel" },
+        { text: "Đăng xuất", style: "destructive", onPress: onLogout },
+      ]);
+    }
   };
 
   return (
@@ -159,15 +165,9 @@ export function ProfileScreen({
           />
         </SettingsGroup>
 
-        <SettingsGroup title="Bảo mật">
-          <SettingsRow
-            label="Đăng xuất"
-            onPress={confirmLogout}
-            showChevron={false}
-            destructive
-            isLast
-          />
-        </SettingsGroup>
+        <Pressable style={styles.logoutButton} onPress={confirmLogout}>
+          <Text style={styles.logoutText}>Đăng xuất</Text>
+        </Pressable>
       </ScrollView>
 
       <Modal animationType="slide" transparent visible={editVisible} onRequestClose={closeEdit}>
@@ -367,6 +367,22 @@ const styles = StyleSheet.create({
   },
   saveText: {
     color: colors.white,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  logoutButton: {
+    minHeight: 44,
+    borderRadius: spacing.radiusLg,
+    borderWidth: 1,
+    borderColor: colors.orange,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.white,
+    marginHorizontal: 16,
+    marginTop: 24,
+  },
+  logoutText: {
+    color: colors.orange,
     fontSize: 15,
     fontWeight: "700",
   },

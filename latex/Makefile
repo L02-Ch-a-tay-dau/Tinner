@@ -5,7 +5,7 @@
 #   make clean     - Remove temp files only
 #   make distclean - Remove everything including PDF
 
-MAIN = main
+MAIN = Chua_Tay_Dau_report
 LATEX = pdflatex
 FLAGS = -interaction=nonstopmode
 

@@ -123,9 +123,9 @@ Welcome to the progress checklist for **Tinner**! This document maps out all req
   - [Done] Deployed Landing Page to promote the app
   - 📂 **Target File:** [13-ProductDistributionAndSurvey.tex](file:///d:/HCMUT/CO3043-PTAD/Tinner/latex/sections/13-ProductDistributionAndSurvey.tex)
 
-- [ ] **2. User Feedback Survey**
-  - [ ] Google Forms survey covering usability, satisfaction, and suggestions
-  - [ ] Feedback collected from at least **five users** outside the development group
+- [x] **2. User Feedback Survey**
+  - [x] Google Forms survey covering usability, satisfaction, and suggestions
+  - [x] Feedback collected from at least **five users** outside the development group
 
 - [Done] **3. App Metrics & Analytics Collector**
   - [Done] Integration of `@sentry/react-native` inside the mobile client
@@ -134,8 +134,8 @@ Welcome to the progress checklist for **Tinner**! This document maps out all req
 
 - [ ] **4. Verification Links & Analysis**
   - [ ] Include link to promotional poster (PDF) in report
-  - [ ] Include link to the user survey in report
-  - [ ] Include detailed feedback and user behavior metrics analysis in report
+  - [x] Include link to the user survey in report
+  - [x] Include detailed feedback and user behavior metrics analysis in report
 
 - [ ] **5. Photographic Evidence**
   - [ ] Compile screenshots or photos of at least five real users interacting with the application
