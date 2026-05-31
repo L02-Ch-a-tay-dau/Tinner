@@ -5,6 +5,7 @@ RUN npm install -g pnpm@10.33.2
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json ./apps/backend/package.json
+COPY apps/backend/prisma ./apps/backend/prisma
 COPY packages/types/package.json ./packages/types/package.json
 COPY packages/api-client/package.json ./packages/api-client/package.json
 
